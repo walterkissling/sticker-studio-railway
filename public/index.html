@@ -26,7 +26,6 @@
       margin: 0 auto;
     }
 
-    /* Header */
     header {
       text-align: center;
       margin-bottom: 30px;
@@ -55,15 +54,9 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
-    .trial-badge.warning {
-      background: rgba(255, 193, 7, 0.95);
-    }
+    .trial-badge.warning { background: rgba(255, 193, 7, 0.95); }
+    .trial-badge.expired { background: rgba(255, 107, 107, 0.95); }
 
-    .trial-badge.expired {
-      background: rgba(255, 107, 107, 0.95);
-    }
-
-    /* Main Grid */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -71,12 +64,9 @@
     }
 
     @media (max-width: 800px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
+      .main-grid { grid-template-columns: 1fr; }
     }
 
-    /* Cards */
     .card {
       background: white;
       border-radius: 24px;
@@ -90,7 +80,6 @@
       color: #333;
     }
 
-    /* Form Elements */
     label {
       display: block;
       font-weight: 600;
@@ -99,7 +88,7 @@
       font-size: 0.95rem;
     }
 
-    textarea {
+    textarea, input[type="text"] {
       width: 100%;
       padding: 14px;
       border: 2px solid #e0e0e0;
@@ -107,11 +96,12 @@
       font-size: 1rem;
       font-family: inherit;
       resize: vertical;
-      min-height: 90px;
       transition: border-color 0.2s;
     }
 
-    textarea:focus {
+    textarea { min-height: 90px; }
+
+    textarea:focus, input:focus {
       outline: none;
       border-color: #764ba2;
     }
@@ -122,7 +112,6 @@
       margin-top: 6px;
     }
 
-    /* Style Grid */
     .style-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -142,9 +131,7 @@
       font-family: inherit;
     }
 
-    .style-btn:hover {
-      border-color: #764ba2;
-    }
+    .style-btn:hover { border-color: #764ba2; }
 
     .style-btn.active {
       border-color: #764ba2;
@@ -152,7 +139,6 @@
       font-weight: 600;
     }
 
-    /* Size Options */
     .size-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -171,27 +157,16 @@
       text-align: center;
     }
 
-    .size-btn:hover {
-      border-color: #764ba2;
-    }
+    .size-btn:hover { border-color: #764ba2; }
 
     .size-btn.active {
       border-color: #764ba2;
       background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
     }
 
-    .size-btn .name {
-      font-weight: 600;
-      color: #333;
-    }
+    .size-btn .name { font-weight: 600; color: #333; }
+    .size-btn .dims { font-size: 0.8rem; color: #666; margin-top: 2px; }
 
-    .size-btn .dims {
-      font-size: 0.8rem;
-      color: #666;
-      margin-top: 2px;
-    }
-
-    /* Quantity */
     .quantity-row {
       display: flex;
       align-items: center;
@@ -212,10 +187,7 @@
       transition: all 0.2s;
     }
 
-    .qty-btn:hover {
-      background: #764ba2;
-      color: white;
-    }
+    .qty-btn:hover { background: #764ba2; color: white; }
 
     .qty-value {
       font-size: 1.6rem;
@@ -224,7 +196,6 @@
       text-align: center;
     }
 
-    /* Buttons */
     .btn-primary {
       width: 100%;
       padding: 18px;
@@ -246,10 +217,7 @@
       box-shadow: 0 6px 25px rgba(102,126,234,0.5);
     }
 
-    .btn-primary:disabled {
-      opacity: 0.7;
-      cursor: wait;
-    }
+    .btn-primary:disabled { opacity: 0.7; cursor: wait; }
 
     .divider {
       text-align: center;
@@ -269,16 +237,9 @@
       transition: all 0.2s;
     }
 
-    .upload-area:hover {
-      border-color: #764ba2;
-      color: #764ba2;
-    }
+    .upload-area:hover { border-color: #764ba2; color: #764ba2; }
+    .upload-area input { display: none; }
 
-    .upload-area input {
-      display: none;
-    }
-
-    /* Status */
     .status {
       margin-top: 16px;
       padding: 14px;
@@ -287,22 +248,10 @@
       font-size: 0.95rem;
     }
 
-    .status.success {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
+    .status.success { background: #e8f5e9; color: #2e7d32; }
+    .status.error { background: #ffebee; color: #c62828; }
+    .status.info { background: #e3f2fd; color: #1565c0; }
 
-    .status.error {
-      background: #ffebee;
-      color: #c62828;
-    }
-
-    .status.info {
-      background: #e3f2fd;
-      color: #1565c0;
-    }
-
-    /* Preview */
     .preview-area {
       min-height: 320px;
       display: flex;
@@ -333,10 +282,7 @@
       box-shadow: 0 8px 30px rgba(0,0,0,0.15);
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-    }
+    .loading { text-align: center; padding: 40px; }
 
     .spinner {
       width: 60px;
@@ -348,11 +294,8 @@
       margin: 0 auto 20px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Action Buttons */
     .action-row {
       display: flex;
       gap: 12px;
@@ -372,10 +315,22 @@
       transition: all 0.2s;
     }
 
-    .btn-outline:hover {
-      background: #764ba2;
-      color: white;
+    .btn-outline:hover { background: #764ba2; color: white; }
+
+    .btn-edit {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid #ff9800;
+      border-radius: 50px;
+      background: white;
+      color: #ff9800;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
     }
+
+    .btn-edit:hover { background: #ff9800; color: white; }
 
     .btn-success {
       flex: 1;
@@ -391,9 +346,7 @@
       transition: all 0.2s;
     }
 
-    .btn-success:hover {
-      transform: translateY(-2px);
-    }
+    .btn-success:hover { transform: translateY(-2px); }
 
     .btn-download {
       width: 100%;
@@ -408,7 +361,6 @@
       font-family: inherit;
     }
 
-    /* Order Summary */
     .order-summary {
       margin-top: 20px;
       padding: 18px;
@@ -429,13 +381,8 @@
       margin-top: 6px;
     }
 
-    .summary-row .label {
-      color: #666;
-    }
-
-    .summary-row .value {
-      font-weight: 500;
-    }
+    .summary-row .label { color: #666; }
+    .summary-row .value { font-weight: 500; }
 
     .summary-row.total .label,
     .summary-row.total .value {
@@ -444,7 +391,6 @@
       color: #764ba2;
     }
 
-    /* Settings */
     .settings-toggle {
       display: block;
       margin: 28px auto 0;
@@ -459,9 +405,7 @@
       transition: all 0.2s;
     }
 
-    .settings-toggle:hover {
-      background: rgba(255,255,255,0.2);
-    }
+    .settings-toggle:hover { background: rgba(255,255,255,0.2); }
 
     .settings-panel {
       margin-top: 20px;
@@ -472,14 +416,9 @@
       display: none;
     }
 
-    .settings-panel.visible {
-      display: block;
-    }
+    .settings-panel.visible { display: block; }
 
-    .settings-panel h3 {
-      margin-bottom: 20px;
-      color: #333;
-    }
+    .settings-panel h3 { margin-bottom: 20px; color: #333; }
 
     .settings-grid {
       display: grid;
@@ -496,10 +435,7 @@
       font-family: inherit;
     }
 
-    .settings-grid input:focus {
-      outline: none;
-      border-color: #764ba2;
-    }
+    .settings-grid input:focus { outline: none; border-color: #764ba2; }
 
     .settings-note {
       margin-top: 16px;
@@ -510,7 +446,7 @@
       color: #666;
     }
 
-    /* Modal */
+    /* Edit Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -525,29 +461,21 @@
       transition: all 0.3s;
     }
 
-    .modal-overlay.visible {
-      opacity: 1;
-      visibility: visible;
-    }
+    .modal-overlay.visible { opacity: 1; visibility: visible; }
 
     .modal {
       background: white;
       border-radius: 24px;
       padding: 32px;
-      max-width: 420px;
+      max-width: 500px;
       width: 90%;
       transform: scale(0.9);
       transition: all 0.3s;
     }
 
-    .modal-overlay.visible .modal {
-      transform: scale(1);
-    }
+    .modal-overlay.visible .modal { transform: scale(1); }
 
-    .modal h2 {
-      margin-bottom: 20px;
-      color: #333;
-    }
+    .modal h2 { margin-bottom: 20px; color: #333; }
 
     .modal-image {
       width: 140px;
@@ -565,14 +493,27 @@
       margin-top: 24px;
     }
 
-    .form-group {
+    .form-group { margin-bottom: 20px; }
+
+    .edit-preview-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-bottom: 20px;
+    }
+
+    .edit-hint {
+      background: #fff3e0;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.85rem;
+      color: #e65100;
+      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
     <header>
       <h1>✨ Sticker Studio ✨</h1>
       <p>Create custom AI-powered stickers</p>
@@ -581,9 +522,7 @@
       </div>
     </header>
 
-    <!-- Main Grid -->
     <div class="main-grid">
-      <!-- Design Panel -->
       <div class="card">
         <h2>🎨 Design Your Sticker</h2>
 
@@ -646,7 +585,6 @@
         <div class="status" id="status" style="display: none;"></div>
       </div>
 
-      <!-- Preview Panel -->
       <div class="card">
         <h2>👀 Preview</h2>
 
@@ -660,8 +598,9 @@
 
         <div id="previewActions" style="display: none;">
           <div class="action-row">
-            <button class="btn-outline" id="regenerateBtn">🔄 Regenerate</button>
-            <button class="btn-success" id="orderBtn">✓ Order Now</button>
+            <button class="btn-outline" id="regenerateBtn">🔄 New</button>
+            <button class="btn-edit" id="editBtn">✏️ Edit</button>
+            <button class="btn-success" id="orderBtn">✓ Order</button>
           </div>
           <button class="btn-download" id="downloadBtn">⬇️ Download Image</button>
 
@@ -687,10 +626,8 @@
       </div>
     </div>
 
-    <!-- Settings Toggle -->
     <button class="settings-toggle" id="settingsToggle">⚙️ Business Settings</button>
 
-    <!-- Settings Panel -->
     <div class="settings-panel" id="settingsPanel">
       <h3>⚙️ Business Settings</h3>
       <div class="settings-grid">
@@ -713,6 +650,27 @@
       </div>
       <div class="settings-note">
         💡 A4 paper (21×29.7cm) fits: ~24 small, ~12 medium, or ~6 large stickers per sheet.
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <h2>✏️ Edit Your Sticker</h2>
+      <div class="edit-preview-container">
+        <img class="modal-image" id="editPreviewImage" src="" alt="Current sticker">
+      </div>
+      <div class="edit-hint">
+        💡 Describe what you want to change: "make the background blue", "add sparkles", "remove the hat", etc.
+      </div>
+      <div class="form-group">
+        <label>Edit instructions:</label>
+        <input type="text" id="editPrompt" placeholder="Add a rainbow in the background...">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline" id="cancelEdit">Cancel</button>
+        <button class="btn-edit" id="applyEdit" style="background: #ff9800; color: white;">✏️ Apply Edit</button>
       </div>
     </div>
   </div>
@@ -756,7 +714,6 @@
   </div>
 
   <script>
-    // State
     const state = {
       prompt: '',
       style: 'realistic',
@@ -768,10 +725,8 @@
       settings: JSON.parse(localStorage.getItem('stickerSettings') || '{}')
     };
 
-    // Save session ID
     localStorage.setItem('sessionId', state.sessionId);
 
-    // Size configs
     const sizes = {
       small: { name: 'Small', dims: '5×5cm', multiplier: 1, perSheet: 24 },
       medium: { name: 'Medium', dims: '7×7cm', multiplier: 1.5, perSheet: 12 },
@@ -789,7 +744,6 @@
       neon: '💜 Neon'
     };
 
-    // DOM Elements
     const promptInput = document.getElementById('prompt');
     const generateBtn = document.getElementById('generateBtn');
     const previewArea = document.getElementById('previewArea');
@@ -798,23 +752,11 @@
     const trialBadge = document.getElementById('trialBadge');
     const trialCount = document.getElementById('trialCount');
 
-    // Initialize
     function init() {
-      // Load settings
-      if (state.settings.businessEmail) {
-        document.getElementById('businessEmail').value = state.settings.businessEmail;
-      }
-      if (state.settings.paperCost) {
-        document.getElementById('paperCost').value = state.settings.paperCost;
-      }
-      if (state.settings.basePrice) {
-        document.getElementById('basePrice').value = state.settings.basePrice;
-      }
-
-      // Fetch trial count from server
+      if (state.settings.businessEmail) document.getElementById('businessEmail').value = state.settings.businessEmail;
+      if (state.settings.paperCost) document.getElementById('paperCost').value = state.settings.paperCost;
+      if (state.settings.basePrice) document.getElementById('basePrice').value = state.settings.basePrice;
       fetchTrials();
-      
-      // Setup event listeners
       setupEventListeners();
     }
 
@@ -824,18 +766,12 @@
         const data = await res.json();
         state.trialsRemaining = data.trialsRemaining;
         updateTrialBadge();
-      } catch (e) {
-        console.log('Could not fetch trials');
-      }
+      } catch (e) { console.log('Could not fetch trials'); }
     }
 
     function setupEventListeners() {
-      // Prompt input
-      promptInput.addEventListener('input', (e) => {
-        state.prompt = e.target.value;
-      });
+      promptInput.addEventListener('input', (e) => { state.prompt = e.target.value; });
 
-      // Style buttons
       document.querySelectorAll('.style-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
@@ -845,7 +781,6 @@
         });
       });
 
-      // Size buttons
       document.querySelectorAll('.size-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
@@ -855,7 +790,6 @@
         });
       });
 
-      // Quantity
       document.getElementById('qtyMinus').addEventListener('click', () => {
         if (state.quantity > 1) {
           state.quantity--;
@@ -870,43 +804,42 @@
         updateSummary();
       });
 
-      // Generate
       generateBtn.addEventListener('click', generate);
-
-      // Regenerate
       document.getElementById('regenerateBtn').addEventListener('click', generate);
-
-      // Upload
       document.getElementById('uploadInput').addEventListener('change', handleUpload);
-
-      // Download
       document.getElementById('downloadBtn').addEventListener('click', downloadImage);
-
-      // Order
       document.getElementById('orderBtn').addEventListener('click', showOrderModal);
       document.getElementById('cancelOrder').addEventListener('click', hideOrderModal);
       document.getElementById('confirmOrder').addEventListener('click', submitOrder);
 
-      // Settings
+      // Edit functionality
+      document.getElementById('editBtn').addEventListener('click', showEditModal);
+      document.getElementById('cancelEdit').addEventListener('click', hideEditModal);
+      document.getElementById('applyEdit').addEventListener('click', applyEdit);
+      document.getElementById('editPrompt').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') applyEdit();
+      });
+
       document.getElementById('settingsToggle').addEventListener('click', () => {
         document.getElementById('settingsPanel').classList.toggle('visible');
       });
 
-      // Save settings on change
       ['businessEmail', 'paperCost', 'basePrice'].forEach(id => {
         document.getElementById(id).addEventListener('change', saveSettings);
       });
 
-      // Reset trials
       document.getElementById('resetTrials').addEventListener('click', () => {
         state.trialsRemaining = 3;
         updateTrialBadge();
         showStatus('Trials reset!', 'success');
       });
 
-      // Close modal on overlay click
       document.getElementById('orderModal').addEventListener('click', (e) => {
         if (e.target.id === 'orderModal') hideOrderModal();
+      });
+
+      document.getElementById('editModal').addEventListener('click', (e) => {
+        if (e.target.id === 'editModal') hideEditModal();
       });
     }
 
@@ -951,15 +884,13 @@
       statusEl.style.display = 'block';
     }
 
-    function hideStatus() {
-      statusEl.style.display = 'none';
-    }
+    function hideStatus() { statusEl.style.display = 'none'; }
 
-    function showLoading() {
+    function showLoading(message = 'Creating your sticker...') {
       previewArea.innerHTML = `
         <div class="loading">
           <div class="spinner"></div>
-          <p style="color: #666;">Creating your sticker...</p>
+          <p style="color: #666;">${message}</p>
           <p style="color: #999; font-size: 0.85rem; margin-top: 8px;">This may take 15-30 seconds</p>
         </div>
       `;
@@ -995,16 +926,12 @@
         });
 
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Generation failed');
-        }
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
 
         state.trialsRemaining = data.trialsRemaining;
         updateTrialBadge();
         showImage(data.image);
         showStatus('Sticker created! 🎉', 'success');
-
       } catch (err) {
         console.error(err);
         showStatus(err.message || 'Generation failed. Please try again.', 'error');
@@ -1021,10 +948,56 @@
       generateBtn.textContent = '✨ Generate Sticker';
     }
 
+    // Edit functionality
+    function showEditModal() {
+      document.getElementById('editPreviewImage').src = state.image;
+      document.getElementById('editPrompt').value = '';
+      document.getElementById('editModal').classList.add('visible');
+      document.getElementById('editPrompt').focus();
+    }
+
+    function hideEditModal() {
+      document.getElementById('editModal').classList.remove('visible');
+    }
+
+    async function applyEdit() {
+      const editPrompt = document.getElementById('editPrompt').value.trim();
+      if (!editPrompt) {
+        alert('Please enter edit instructions');
+        return;
+      }
+
+      hideEditModal();
+      showLoading('Applying your edits...');
+
+      try {
+        const res = await fetch('/api/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            editPrompt: editPrompt,
+            currentImage: state.image,
+            sessionId: state.sessionId
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Edit failed');
+
+        state.trialsRemaining = data.trialsRemaining;
+        updateTrialBadge();
+        showImage(data.image);
+        showStatus('Sticker edited! 🎉', 'success');
+      } catch (err) {
+        console.error(err);
+        showStatus(err.message || 'Edit failed. Please try again.', 'error');
+        showImage(state.image); // Restore previous image
+      }
+    }
+
     function handleUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (evt) => {
         showImage(evt.target.result);
@@ -1043,9 +1016,7 @@
 
     function showOrderModal() {
       document.getElementById('modalImage').src = state.image;
-      document.getElementById('modalDesign').textContent = state.prompt.length > 30 
-        ? state.prompt.substring(0, 30) + '...' 
-        : state.prompt;
+      document.getElementById('modalDesign').textContent = state.prompt.length > 30 ? state.prompt.substring(0, 30) + '...' : state.prompt || 'Custom upload';
       document.getElementById('modalStyle').textContent = styleNames[state.style];
       document.getElementById('modalSize').textContent = `${sizes[state.size].name} (${sizes[state.size].dims})`;
       document.getElementById('modalQty').textContent = state.quantity;
@@ -1059,7 +1030,7 @@
 
     async function submitOrder() {
       const orderData = {
-        prompt: state.prompt,
+        prompt: state.prompt || 'Custom upload',
         style: styleNames[state.style],
         size: `${sizes[state.size].name} (${sizes[state.size].dims})`,
         quantity: state.quantity,
@@ -1082,7 +1053,6 @@
       }
     }
 
-    // Initialize app
     init();
   </script>
 </body>

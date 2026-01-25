@@ -33,39 +33,31 @@ function getTrials(sessionId) {
 const styles = {
   realistic: {
     prompt: 'photorealistic, highly detailed, professional photography, 8k uhd, sharp focus',
-    negative: 'cartoon, anime, drawing, painting, sketch, illustration, blurry'
   },
   cartoon: {
     prompt: 'cartoon style, colorful, fun, animated, disney pixar style, vibrant',
-    negative: 'realistic, photo, dark, scary, blurry'
   },
   kawaii: {
     prompt: 'kawaii style, cute, chibi, adorable, pastel colors, japanese cute aesthetic, rounded shapes',
-    negative: 'realistic, scary, dark, adult, sharp edges'
   },
   watercolor: {
     prompt: 'watercolor painting, soft colors, artistic, delicate brushstrokes, fine art, painterly',
-    negative: 'photo, digital, 3d render, sharp lines'
   },
   '3d': {
     prompt: '3d render, clay render, blender style, cute 3d character, smooth, rounded, soft lighting',
-    negative: 'photo, flat, 2d, drawing, sketch'
   },
   minimalist: {
     prompt: 'minimalist design, simple shapes, clean lines, flat design, vector style, geometric',
-    negative: 'complex, detailed, realistic, photo, textured'
   },
   vintage: {
     prompt: 'vintage style, retro, nostalgic, old fashioned, classic illustration, muted colors',
-    negative: 'modern, digital, neon, bright'
   },
   neon: {
     prompt: 'neon lights, glowing, cyberpunk, vibrant neon colors, dark background with bright glow, synthwave',
-    negative: 'daylight, natural, muted colors, pastel'
   }
 };
 
-// API endpoint to generate sticker
+// API endpoint to generate sticker using Gemini
 app.post('/api/generate', async (req, res) => {
   try {
     const { prompt, style, sessionId } = req.body;
@@ -74,113 +66,183 @@ app.post('/api/generate', async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'Gemini API key not configured. Add GEMINI_API_KEY to Railway variables.' });
+    }
+
     // Check trials
     const trial = getTrials(sessionId || 'default');
     
     const styleConfig = styles[style] || styles.realistic;
     
     // Build the full prompt
-    const fullPrompt = `sticker design of ${prompt}, ${styleConfig.prompt}, white background, die-cut sticker style, centered composition, high quality, vibrant colors, clean edges`;
-    const negativePrompt = `${styleConfig.negative}, text, watermark, signature, blurry, bad quality, distorted, ugly, cropped, out of frame`;
+    const fullPrompt = `Generate an image of a sticker design: ${prompt}. 
+Style: ${styleConfig.prompt}. 
+Important: White background, die-cut sticker style, centered composition, high quality, vibrant colors, clean edges suitable for printing as a physical sticker.`;
 
-    console.log('Generating image with prompt:', fullPrompt);
+    console.log('Generating image with Gemini:', fullPrompt);
 
-    // Try Hugging Face API (free, no key required for basic usage)
-    const hfResponse = await fetch(
-      'https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0',
+    // Use Gemini's image generation
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.HUGGINGFACE_API_KEY && {
-            'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`
-          })
         },
         body: JSON.stringify({
-          inputs: fullPrompt,
-          parameters: {
-            negative_prompt: negativePrompt,
-            num_inference_steps: 25,
-            guidance_scale: 7.5,
-            width: 512,
-            height: 512
+          contents: [{
+            parts: [{
+              text: fullPrompt
+            }]
+          }],
+          generationConfig: {
+            responseModalities: ["IMAGE", "TEXT"]
           }
         })
       }
     );
 
-    if (!hfResponse.ok) {
-      const errorText = await hfResponse.text();
-      console.error('Hugging Face error:', hfResponse.status, errorText);
-      
-      // If model is loading, tell user to wait
-      if (hfResponse.status === 503) {
-        return res.status(503).json({ 
-          error: 'Model is warming up. Please try again in 20-30 seconds.',
-          retry: true 
-        });
-      }
-      
-      // Try backup model
-      console.log('Trying backup model...');
-      const backupResponse = await fetch(
-        'https://router.huggingface.co/hf-inference/models/runwayml/stable-diffusion-v1-5',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(process.env.HUGGINGFACE_API_KEY && {
-              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`
-            })
-          },
-          body: JSON.stringify({
-            inputs: fullPrompt,
-            parameters: {
-              negative_prompt: negativePrompt,
-              num_inference_steps: 25,
-              guidance_scale: 7.5
-            }
-          })
-        }
-      );
-
-      if (!backupResponse.ok) {
-        if (backupResponse.status === 503) {
-          return res.status(503).json({ 
-            error: 'AI models are warming up. Please try again in 30 seconds.',
-            retry: true 
-          });
-        }
-        throw new Error('Image generation failed');
-      }
-
-      const backupBuffer = await backupResponse.buffer();
-      const backupBase64 = backupBuffer.toString('base64');
-      
-      // Decrement trials
-      if (trial.count > 0) trial.count--;
-      
-      return res.json({
-        image: `data:image/png;base64,${backupBase64}`,
-        trialsRemaining: trial.count
-      });
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini error:', geminiResponse.status, errorText);
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
     }
 
-    // Get image buffer
-    const imageBuffer = await hfResponse.buffer();
-    const base64Image = imageBuffer.toString('base64');
+    const data = await geminiResponse.json();
     
+    // Extract image from response
+    let imageData = null;
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      const parts = data.candidates[0].content.parts;
+      for (const part of parts) {
+        if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
+          imageData = part.inlineData.data;
+          break;
+        }
+      }
+    }
+
+    if (!imageData) {
+      console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 500));
+      throw new Error('No image generated. Try a different prompt.');
+    }
+
     // Decrement trials
     if (trial.count > 0) trial.count--;
 
     res.json({
-      image: `data:image/png;base64,${base64Image}`,
+      image: `data:image/png;base64,${imageData}`,
       trialsRemaining: trial.count
     });
 
   } catch (error) {
     console.error('Generation error:', error);
     res.status(500).json({ error: error.message || 'Failed to generate image' });
+  }
+});
+
+// API endpoint to EDIT an existing image using Gemini
+app.post('/api/edit', async (req, res) => {
+  try {
+    const { editPrompt, currentImage, sessionId } = req.body;
+
+    if (!editPrompt) {
+      return res.status(400).json({ error: 'Edit instructions are required' });
+    }
+
+    if (!currentImage) {
+      return res.status(400).json({ error: 'Current image is required' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'Gemini API key not configured.' });
+    }
+
+    // Check trials
+    const trial = getTrials(sessionId || 'default');
+
+    // Extract base64 data from data URL
+    const base64Data = currentImage.replace(/^data:image\/\w+;base64,/, '');
+    
+    // Determine mime type
+    let mimeType = 'image/png';
+    if (currentImage.startsWith('data:image/jpeg')) {
+      mimeType = 'image/jpeg';
+    } else if (currentImage.startsWith('data:image/webp')) {
+      mimeType = 'image/webp';
+    }
+
+    const fullPrompt = `Edit this sticker image: ${editPrompt}. 
+Keep it as a sticker design with white background, die-cut style, centered composition, high quality, vibrant colors, clean edges suitable for printing.`;
+
+    console.log('Editing image with Gemini:', fullPrompt);
+
+    // Use Gemini with the image input for editing
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Data
+                }
+              },
+              {
+                text: fullPrompt
+              }
+            ]
+          }],
+          generationConfig: {
+            responseModalities: ["IMAGE", "TEXT"]
+          }
+        })
+      }
+    );
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini edit error:', geminiResponse.status, errorText);
+      throw new Error(`Gemini API error: ${geminiResponse.status}`);
+    }
+
+    const data = await geminiResponse.json();
+    
+    // Extract image from response
+    let imageData = null;
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      const parts = data.candidates[0].content.parts;
+      for (const part of parts) {
+        if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
+          imageData = part.inlineData.data;
+          break;
+        }
+      }
+    }
+
+    if (!imageData) {
+      console.error('No image in Gemini edit response:', JSON.stringify(data).substring(0, 500));
+      throw new Error('Could not edit image. Try different instructions.');
+    }
+
+    // Decrement trials
+    if (trial.count > 0) trial.count--;
+
+    res.json({
+      image: `data:image/png;base64,${imageData}`,
+      trialsRemaining: trial.count
+    });
+
+  } catch (error) {
+    console.error('Edit error:', error);
+    res.status(500).json({ error: error.message || 'Failed to edit image' });
   }
 });
 
@@ -195,7 +257,6 @@ app.post('/api/order', async (req, res) => {
   try {
     const { prompt, style, size, quantity, total, image, customerEmail } = req.body;
     
-    // In production, you'd save this to a database and/or send emails
     console.log('New order received:', {
       prompt,
       style,
@@ -231,7 +292,6 @@ app.post('/api/order', async (req, res) => {
           <p><strong>Total:</strong> $${total}</p>
           <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
           <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-          ${image ? `<p><strong>Image:</strong></p><img src="${image}" style="max-width: 300px;" />` : ''}
         `
       });
     }
