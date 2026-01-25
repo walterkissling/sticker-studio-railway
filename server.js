@@ -87,7 +87,7 @@ app.post('/api/generate', async (req, res) => {
 
     // Try Hugging Face API (free, no key required for basic usage)
     const hfResponse = await fetch(
-      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0',
+      'https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0',
       {
         method: 'POST',
         headers: {
@@ -124,7 +124,7 @@ app.post('/api/generate', async (req, res) => {
       // Try backup model
       console.log('Trying backup model...');
       const backupResponse = await fetch(
-        'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5',
+        'https://router.huggingface.co/hf-inference/models/runwayml/stable-diffusion-v1-5',
         {
           method: 'POST',
           headers: {
