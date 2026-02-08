@@ -391,61 +391,6 @@
       color: #764ba2;
     }
 
-    .settings-toggle {
-      display: block;
-      margin: 28px auto 0;
-      padding: 12px 28px;
-      border: 2px solid rgba(255,255,255,0.5);
-      border-radius: 50px;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-
-    .settings-toggle:hover { background: rgba(255,255,255,0.2); }
-
-    .settings-panel {
-      margin-top: 20px;
-      padding: 28px;
-      background: white;
-      border-radius: 24px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-      display: none;
-    }
-
-    .settings-panel.visible { display: block; }
-
-    .settings-panel h3 { margin-bottom: 20px; color: #333; }
-
-    .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-
-    .settings-grid input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e0e0e0;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-family: inherit;
-    }
-
-    .settings-grid input:focus { outline: none; border-color: #764ba2; }
-
-    .settings-note {
-      margin-top: 16px;
-      padding: 14px;
-      background: #f5f5f5;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      color: #666;
-    }
-
     /* Edit Modal */
     .modal-overlay {
       position: fixed;
@@ -707,32 +652,6 @@
       </div>
     </div>
 
-    <button class="settings-toggle" id="settingsToggle">⚙️ Business Settings</button>
-
-    <div class="settings-panel" id="settingsPanel">
-      <h3>⚙️ Business Settings</h3>
-      <div class="settings-grid">
-        <div>
-          <label>Your Email</label>
-          <input type="email" id="businessEmail" placeholder="orders@yourbusiness.com">
-        </div>
-        <div>
-          <label>Paper Cost / Sheet ($)</label>
-          <input type="number" id="paperCost" value="0.50" step="0.01">
-        </div>
-        <div>
-          <label>Base Price / Sticker ($)</label>
-          <input type="number" id="basePrice" value="2.00" step="0.01">
-        </div>
-        <div>
-          <label>Reset Trials</label>
-          <button class="btn-outline" id="resetTrials" style="width: 100%; margin-top: 4px;">Reset to 3</button>
-        </div>
-      </div>
-      <div class="settings-note">
-        💡 A4 paper (21×29.7cm) fits: ~24 small, ~12 medium, or ~6 large stickers per sheet.
-      </div>
-    </div>
   </div>
 
   <!-- Edit Modal -->
@@ -803,7 +722,6 @@
       image: null,
       trialsRemaining: 3,
       sessionId: localStorage.getItem('sessionId') || Math.random().toString(36).substr(2, 9),
-      settings: JSON.parse(localStorage.getItem('stickerSettings') || '{}'),
       history: JSON.parse(localStorage.getItem('stickerHistory') || '[]')
     };
 
@@ -835,9 +753,6 @@
     const trialCount = document.getElementById('trialCount');
 
     function init() {
-      if (state.settings.businessEmail) document.getElementById('businessEmail').value = state.settings.businessEmail;
-      if (state.settings.paperCost) document.getElementById('paperCost').value = state.settings.paperCost;
-      if (state.settings.basePrice) document.getElementById('basePrice').value = state.settings.basePrice;
       fetchTrials();
       setupEventListeners();
       renderHistory();
@@ -903,28 +818,6 @@
         if (e.key === 'Enter') applyEdit();
       });
 
-      document.getElementById('settingsToggle').addEventListener('click', () => {
-        document.getElementById('settingsPanel').classList.toggle('visible');
-      });
-
-      ['businessEmail', 'paperCost', 'basePrice'].forEach(id => {
-        document.getElementById(id).addEventListener('change', saveSettings);
-      });
-
-      document.getElementById('resetTrials').addEventListener('click', async () => {
-        try {
-          const res = await fetch(`/api/trials/${state.sessionId}/reset`, { method: 'POST' });
-          const data = await res.json();
-          state.trialsRemaining = data.trialsRemaining;
-          updateTrialBadge();
-          showStatus('Trials reset!', 'success');
-        } catch (e) {
-          state.trialsRemaining = 3;
-          updateTrialBadge();
-          showStatus('Trials reset locally', 'success');
-        }
-      });
-
       document.getElementById('orderModal').addEventListener('click', (e) => {
         if (e.target.id === 'orderModal') hideOrderModal();
       });
@@ -936,19 +829,10 @@
       document.getElementById('clearHistory').addEventListener('click', clearHistory);
     }
 
-    function saveSettings() {
-      state.settings = {
-        businessEmail: document.getElementById('businessEmail').value,
-        paperCost: parseFloat(document.getElementById('paperCost').value) || 0.50,
-        basePrice: parseFloat(document.getElementById('basePrice').value) || 2.00
-      };
-      localStorage.setItem('stickerSettings', JSON.stringify(state.settings));
-    }
-
     function getPrice() {
       const sizeConfig = sizes[state.size];
-      const paperCost = state.settings.paperCost || 0.50;
-      const basePrice = state.settings.basePrice || 2.00;
+      const paperCost = 0.50;
+      const basePrice = 2.00;
       const pricePerSticker = (basePrice * sizeConfig.multiplier) + (paperCost / sizeConfig.perSheet);
       return (pricePerSticker * state.quantity).toFixed(2);
     }
