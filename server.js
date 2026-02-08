@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 const path = require('path');
+const PDFDocument = require('pdfkit');
 require('dotenv').config();
 
 const app = express();
@@ -319,11 +320,83 @@ app.get('/api/trials/:sessionId', (req, res) => {
   res.json({ trialsRemaining: remaining });
 });
 
+// Generate a print-ready PDF with stickers tiled on A4
+function generatePrintPDF(imageBuffer, sizeKey, quantity) {
+  return new Promise((resolve, reject) => {
+    // A4 in points: 595.28 x 841.89
+    const A4_W = 595.28;
+    const A4_H = 841.89;
+    const CM_TO_PT = 28.35; // 1cm = 28.35 points
+    const MARGIN = 1 * CM_TO_PT; // 1cm margin
+    const GAP = 0.3 * CM_TO_PT; // 0.3cm gap between stickers
+
+    // Size in cm
+    const sizeMap = {
+      'Small (5×5cm)': 5,
+      'Medium (7×7cm)': 7,
+      'Large (10×10cm)': 10
+    };
+    const sizeCm = sizeMap[sizeKey] || 5;
+    const sizePt = sizeCm * CM_TO_PT;
+
+    // How many fit per row/col
+    const cols = Math.floor((A4_W - 2 * MARGIN + GAP) / (sizePt + GAP));
+    const rows = Math.floor((A4_H - 2 * MARGIN + GAP) / (sizePt + GAP));
+    const perPage = cols * rows;
+    const totalPages = Math.ceil(quantity / perPage);
+
+    const doc = new PDFDocument({ size: 'A4', margin: 0 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    let placed = 0;
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) doc.addPage({ size: 'A4', margin: 0 });
+
+      // Draw cut lines and stickers
+      for (let row = 0; row < rows && placed < quantity; row++) {
+        for (let col = 0; col < cols && placed < quantity; col++) {
+          const x = MARGIN + col * (sizePt + GAP);
+          const y = MARGIN + row * (sizePt + GAP);
+
+          // Light cut line border
+          doc.save();
+          doc.rect(x, y, sizePt, sizePt)
+            .dash(3, { space: 3 })
+            .strokeColor('#cccccc')
+            .stroke();
+          doc.restore();
+
+          // Place sticker image
+          doc.image(imageBuffer, x + 2, y + 2, {
+            width: sizePt - 4,
+            height: sizePt - 4,
+            fit: [sizePt - 4, sizePt - 4],
+            align: 'center',
+            valign: 'center'
+          });
+
+          placed++;
+        }
+      }
+
+      // Footer
+      doc.fontSize(8).fillColor('#999999')
+        .text(`Sticker Studio - ${sizeCm}x${sizeCm}cm - Page ${page + 1}/${totalPages}`,
+          MARGIN, A4_H - MARGIN + 5, { width: A4_W - 2 * MARGIN, align: 'center' });
+    }
+
+    doc.end();
+  });
+}
+
 // API endpoint to submit order
 app.post('/api/order', async (req, res) => {
   try {
     const { prompt, style, size, quantity, total, image, customerEmail } = req.body;
-    
+
     console.log('New order received:', {
       prompt,
       style,
@@ -337,19 +410,36 @@ app.post('/api/order', async (req, res) => {
     // Respond immediately so the customer isn't waiting
     res.json({ success: true, message: 'Order received!' });
 
-    // Send email in the background via Resend API (HTTP, no SMTP needed)
+    // Send email in the background via Resend API
     if (process.env.RESEND_API_KEY && process.env.BUSINESS_EMAIL) {
       try {
-        // Build attachment
         const attachments = [];
+
+        // Extract image and generate print PDF
         if (image && image.startsWith('data:image/')) {
           const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
           if (matches) {
+            const imageBuffer = Buffer.from(matches[2], 'base64');
+
+            // Attach original image
             const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
             attachments.push({
-              filename: `sticker-order-${Date.now()}.${ext}`,
+              filename: `sticker-${Date.now()}.${ext}`,
               content: matches[2]
             });
+
+            // Generate and attach print-ready PDF
+            try {
+              console.log('Generating print PDF...');
+              const pdfBuffer = await generatePrintPDF(imageBuffer, size, quantity);
+              attachments.push({
+                filename: `print-ready-${quantity}x-${size.replace(/[^a-zA-Z0-9]/g, '')}.pdf`,
+                content: pdfBuffer.toString('base64')
+              });
+              console.log('Print PDF generated');
+            } catch (pdfErr) {
+              console.error('PDF generation failed:', pdfErr.message);
+            }
           }
         }
 
@@ -371,8 +461,10 @@ app.post('/api/order', async (req, res) => {
               <p><strong>Size:</strong> ${size}</p>
               <p><strong>Quantity:</strong> ${quantity}</p>
               <p><strong>Total:</strong> $${total}</p>
-              <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
+              <p><strong>Customer Email:</strong> ${customerEmail}</p>
               <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+              <hr>
+              <p>📎 <strong>Attachments:</strong> Original image + print-ready PDF (A4, tiled with cut lines)</p>
             `,
             attachments
           })
