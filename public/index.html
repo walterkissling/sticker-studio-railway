@@ -510,6 +510,77 @@
       color: #e65100;
       margin-bottom: 16px;
     }
+
+    .history-section {
+      margin-top: 28px;
+    }
+
+    .history-section .card h2 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-clear {
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      background: white;
+      color: #999;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .history-clear:hover { border-color: #c62828; color: #c62828; }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .history-item {
+      position: relative;
+      cursor: pointer;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      aspect-ratio: 1;
+    }
+
+    .history-item:hover { border-color: #764ba2; transform: translateY(-2px); }
+
+    .history-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .history-item .history-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 4px 6px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      font-size: 0.7rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: #999;
+      padding: 24px;
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 <body>
@@ -626,6 +697,16 @@
       </div>
     </div>
 
+    <div class="history-section" id="historySection" style="display: none;">
+      <div class="card">
+        <h2>
+          🕒 Previous Designs
+          <button class="history-clear" id="clearHistory">Clear All</button>
+        </h2>
+        <div class="history-grid" id="historyGrid"></div>
+      </div>
+    </div>
+
     <button class="settings-toggle" id="settingsToggle">⚙️ Business Settings</button>
 
     <div class="settings-panel" id="settingsPanel">
@@ -722,7 +803,8 @@
       image: null,
       trialsRemaining: 3,
       sessionId: localStorage.getItem('sessionId') || Math.random().toString(36).substr(2, 9),
-      settings: JSON.parse(localStorage.getItem('stickerSettings') || '{}')
+      settings: JSON.parse(localStorage.getItem('stickerSettings') || '{}'),
+      history: JSON.parse(localStorage.getItem('stickerHistory') || '[]')
     };
 
     localStorage.setItem('sessionId', state.sessionId);
@@ -758,6 +840,7 @@
       if (state.settings.basePrice) document.getElementById('basePrice').value = state.settings.basePrice;
       fetchTrials();
       setupEventListeners();
+      renderHistory();
     }
 
     async function fetchTrials() {
@@ -849,6 +932,8 @@
       document.getElementById('editModal').addEventListener('click', (e) => {
         if (e.target.id === 'editModal') hideEditModal();
       });
+
+      document.getElementById('clearHistory').addEventListener('click', clearHistory);
     }
 
     function saveSettings() {
@@ -904,11 +989,57 @@
       `;
     }
 
-    function showImage(src) {
+    function showImage(src, skipHistory) {
       state.image = src;
       previewArea.innerHTML = `<img class="preview-image" src="${src}" alt="Generated sticker">`;
       previewActions.style.display = 'block';
       updateSummary();
+      if (!skipHistory) {
+        saveToHistory(src, state.prompt || 'Custom upload');
+      }
+    }
+
+    function saveToHistory(image, prompt) {
+      // Avoid duplicates of the exact same image
+      state.history = state.history.filter(h => h.image !== image);
+      state.history.unshift({ image, prompt, date: Date.now() });
+      // Keep max 20 entries to avoid localStorage limits
+      if (state.history.length > 20) state.history = state.history.slice(0, 20);
+      localStorage.setItem('stickerHistory', JSON.stringify(state.history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const section = document.getElementById('historySection');
+      const grid = document.getElementById('historyGrid');
+      if (state.history.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      grid.innerHTML = state.history.map((item, i) => `
+        <div class="history-item" data-index="${i}" title="${item.prompt}">
+          <img src="${item.image}" alt="${item.prompt}">
+          <div class="history-label">${item.prompt}</div>
+        </div>
+      `).join('');
+      grid.querySelectorAll('.history-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = parseInt(el.dataset.index);
+          const item = state.history[idx];
+          state.prompt = item.prompt;
+          promptInput.value = item.prompt;
+          showImage(item.image, true);
+          showStatus('Loaded from history', 'info');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
+
+    function clearHistory() {
+      state.history = [];
+      localStorage.removeItem('stickerHistory');
+      renderHistory();
     }
 
     async function generate() {
