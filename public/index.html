@@ -526,6 +526,210 @@
       padding: 24px;
       font-size: 0.95rem;
     }
+
+    /* Sheet Builder Modal */
+    .sheet-modal {
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 600px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(0.9);
+      transition: all 0.3s;
+    }
+
+    .modal-overlay.visible .sheet-modal { transform: scale(1); }
+
+    .sheet-modal h2 { margin-bottom: 20px; color: #333; }
+
+    .sheet-size-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .sheet-size-btn {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .sheet-size-btn:hover { border-color: #764ba2; }
+
+    .sheet-size-btn.active {
+      border-color: #764ba2;
+      background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+      font-weight: 600;
+    }
+
+    .sheet-size-btn .s-name { font-weight: 600; color: #333; }
+    .sheet-size-btn .s-info { font-size: 0.8rem; color: #666; margin-top: 2px; }
+
+    .slots-indicator {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #764ba2;
+      margin-bottom: 16px;
+    }
+
+    .sheet-preview-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+      min-height: 52px;
+      padding: 10px;
+      background: #f5f7fa;
+      border-radius: 12px;
+    }
+
+    .sheet-slot {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 2px dashed #ccc;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sheet-slot.filled {
+      border: 2px solid #764ba2;
+    }
+
+    .sheet-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sheet-designs-label {
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .sheet-thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .sheet-thumb {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #e0e0e0;
+      aspect-ratio: 1;
+      transition: all 0.2s;
+    }
+
+    .sheet-thumb.in-use { border-color: #764ba2; }
+
+    .sheet-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sheet-thumb-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 4px;
+      background: rgba(0,0,0,0.65);
+    }
+
+    .sheet-thumb-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      color: #764ba2;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .sheet-thumb-btn:hover { background: #764ba2; color: white; }
+    .sheet-thumb-btn:disabled { opacity: 0.4; cursor: default; }
+
+    .sheet-thumb-count {
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sheet-email-row { margin-bottom: 20px; }
+
+    .sheet-email-row input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 1rem;
+      margin-top: 6px;
+    }
+
+    .sheet-email-row input:focus { outline: none; border-color: #764ba2; }
+
+    .sheet-price {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #764ba2;
+      margin-bottom: 16px;
+    }
+
+    .sheet-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .sheet-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .sheet-empty-hint {
+      text-align: center;
+      color: #999;
+      padding: 16px;
+      font-size: 0.9rem;
+    }
+
+    .order-sheet-hint {
+      text-align: center;
+      color: #666;
+      padding: 10px 0 0;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -578,15 +782,6 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Quantity:</label>
-          <div class="quantity-row">
-            <button class="qty-btn" id="qtyMinus">−</button>
-            <span class="qty-value" id="qtyValue">1</span>
-            <button class="qty-btn" id="qtyPlus">+</button>
-          </div>
-        </div>
-
         <button class="btn-primary" id="generateBtn">✨ Generate Sticker</button>
 
         <div class="divider">— or —</div>
@@ -620,21 +815,10 @@
 
           <div class="order-summary">
             <div class="summary-row">
-              <span class="label">Style:</span>
-              <span class="value" id="summaryStyle">📷 Realistic</span>
-            </div>
-            <div class="summary-row">
               <span class="label">Size:</span>
               <span class="value" id="summarySize">Medium (7×7cm)</span>
             </div>
-            <div class="summary-row">
-              <span class="label">Quantity:</span>
-              <span class="value" id="summaryQty">1</span>
-            </div>
-            <div class="summary-row total">
-              <span class="label">Total:</span>
-              <span class="value" id="summaryTotal">$2.00</span>
-            </div>
+            <p class="order-sheet-hint">Click <strong>Order</strong> to build your sheet with multiple designs</p>
           </div>
         </div>
       </div>
@@ -673,40 +857,39 @@
     </div>
   </div>
 
-  <!-- Order Modal -->
-  <div class="modal-overlay" id="orderModal">
-    <div class="modal">
-      <h2>📦 Confirm Your Order</h2>
-      <img class="modal-image" id="modalImage" src="" alt="Sticker preview">
-      <div class="order-summary">
-        <div class="summary-row">
-          <span class="label">Design:</span>
-          <span class="value" id="modalDesign">-</span>
-        </div>
-        <div class="summary-row">
-          <span class="label">Style:</span>
-          <span class="value" id="modalStyle">-</span>
-        </div>
-        <div class="summary-row">
-          <span class="label">Size:</span>
-          <span class="value" id="modalSize">-</span>
-        </div>
-        <div class="summary-row">
-          <span class="label">Quantity:</span>
-          <span class="value" id="modalQty">-</span>
-        </div>
-        <div class="summary-row total">
-          <span class="label">Total:</span>
-          <span class="value" id="modalTotal">-</span>
-        </div>
+  <!-- Sheet Builder Modal -->
+  <div class="modal-overlay" id="sheetModal">
+    <div class="sheet-modal">
+      <h2>📋 Build Your Sheet</h2>
+
+      <div class="sheet-size-toggle" id="sheetSizeToggle">
+        <button class="sheet-size-btn active" data-size="medium">
+          <div class="s-name">Medium</div>
+          <div class="s-info">7×7cm — 8 per sheet</div>
+        </button>
+        <button class="sheet-size-btn" data-size="large">
+          <div class="s-name">Large</div>
+          <div class="s-info">10×10cm — 4 per sheet</div>
+        </button>
       </div>
-      <div style="margin-top: 16px;">
+
+      <div class="slots-indicator" id="slotsIndicator">0 / 8 filled</div>
+
+      <div class="sheet-preview-row" id="sheetPreviewRow"></div>
+
+      <div class="sheet-designs-label">Your designs:</div>
+      <div class="sheet-thumb-grid" id="sheetThumbGrid"></div>
+
+      <div class="sheet-email-row">
         <label>Your Email:</label>
-        <input type="email" id="customerEmail" placeholder="your@email.com" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; margin-top: 6px;">
+        <input type="email" id="sheetEmail" placeholder="your@email.com">
       </div>
-      <div class="modal-actions">
-        <button class="btn-outline" id="cancelOrder">Cancel</button>
-        <button class="btn-success" id="confirmOrder">✓ Submit Order</button>
+
+      <div class="sheet-price" id="sheetPrice">₡0</div>
+
+      <div class="sheet-actions">
+        <button class="btn-outline" id="cancelSheet">Cancel</button>
+        <button class="btn-success sheet-submit" id="submitSheet" disabled>✓ Submit Order</button>
       </div>
     </div>
   </div>
@@ -716,18 +899,23 @@
       prompt: '',
       style: 'realistic',
       size: 'medium',
-      quantity: 1,
       image: null,
       trialsRemaining: 5,
       sessionId: localStorage.getItem('sessionId') || Math.random().toString(36).substr(2, 9),
-      history: JSON.parse(localStorage.getItem('stickerHistory') || '[]')
+      history: JSON.parse(localStorage.getItem('stickerHistory') || '[]'),
+      // Sheet builder state
+      sheet: {
+        size: 'medium',
+        // Map: history index -> count of slots used by that design
+        counts: {}
+      }
     };
 
     localStorage.setItem('sessionId', state.sessionId);
 
     const sizes = {
-      medium: { name: 'Medium', dims: '7×7cm', multiplier: 1, perSheet: 8 },
-      large: { name: 'Large', dims: '10×10cm', multiplier: 1.5, perSheet: 4 }
+      medium: { name: 'Medium', dims: '7×7cm', perSheet: 8 },
+      large: { name: 'Large', dims: '10×10cm', perSheet: 4 }
     };
 
     const styleNames = {
@@ -749,6 +937,24 @@
     const trialBadge = document.getElementById('trialBadge');
     const trialCount = document.getElementById('trialCount');
 
+    // ----- Sheet helpers -----
+    function getMaxSlots() {
+      return sizes[state.sheet.size].perSheet;
+    }
+
+    function getTotalSlots() {
+      return Object.values(state.sheet.counts).reduce((a, b) => a + b, 0);
+    }
+
+    function getSheetPrice() {
+      return '5,000';
+    }
+
+    function formatPrice(val) {
+      return `₡${val}`;
+    }
+
+    // ----- Init -----
     function init() {
       fetchTrials();
       setupEventListeners();
@@ -785,27 +991,11 @@
         });
       });
 
-      document.getElementById('qtyMinus').addEventListener('click', () => {
-        if (state.quantity > 1) {
-          state.quantity--;
-          document.getElementById('qtyValue').textContent = state.quantity;
-          updateSummary();
-        }
-      });
-
-      document.getElementById('qtyPlus').addEventListener('click', () => {
-        state.quantity++;
-        document.getElementById('qtyValue').textContent = state.quantity;
-        updateSummary();
-      });
-
       generateBtn.addEventListener('click', generate);
       document.getElementById('regenerateBtn').addEventListener('click', generate);
       document.getElementById('uploadInput').addEventListener('change', handleUpload);
       document.getElementById('downloadBtn').addEventListener('click', downloadImage);
-      document.getElementById('orderBtn').addEventListener('click', showOrderModal);
-      document.getElementById('cancelOrder').addEventListener('click', hideOrderModal);
-      document.getElementById('confirmOrder').addEventListener('click', submitOrder);
+      document.getElementById('orderBtn').addEventListener('click', showSheetModal);
 
       // Edit functionality
       document.getElementById('editBtn').addEventListener('click', showEditModal);
@@ -815,30 +1005,34 @@
         if (e.key === 'Enter') applyEdit();
       });
 
-      document.getElementById('orderModal').addEventListener('click', (e) => {
-        if (e.target.id === 'orderModal') hideOrderModal();
-      });
-
       document.getElementById('editModal').addEventListener('click', (e) => {
         if (e.target.id === 'editModal') hideEditModal();
+      });
+
+      // Sheet modal
+      document.getElementById('cancelSheet').addEventListener('click', hideSheetModal);
+      document.getElementById('submitSheet').addEventListener('click', submitSheetOrder);
+      document.getElementById('sheetModal').addEventListener('click', (e) => {
+        if (e.target.id === 'sheetModal') hideSheetModal();
+      });
+
+      // Sheet size toggle
+      document.querySelectorAll('.sheet-size-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.sheet-size-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.sheet.size = btn.dataset.size;
+          // Trim excess slots when switching to fewer
+          trimSheetSlots();
+          renderSheetModal();
+        });
       });
 
       document.getElementById('clearHistory').addEventListener('click', clearHistory);
     }
 
-    function getPrice() {
-      const sizeConfig = sizes[state.size];
-      const paperCost = 0.50;
-      const basePrice = 2.00;
-      const pricePerSticker = (basePrice * sizeConfig.multiplier) + (paperCost / sizeConfig.perSheet);
-      return (pricePerSticker * state.quantity).toFixed(2);
-    }
-
     function updateSummary() {
-      document.getElementById('summaryStyle').textContent = styleNames[state.style];
       document.getElementById('summarySize').textContent = `${sizes[state.size].name} (${sizes[state.size].dims})`;
-      document.getElementById('summaryQty').textContent = state.quantity;
-      document.getElementById('summaryTotal').textContent = `$${getPrice()}`;
     }
 
     function updateTrialBadge() {
@@ -1034,49 +1228,204 @@
       link.click();
     }
 
-    function showOrderModal() {
-      document.getElementById('modalImage').src = state.image;
-      document.getElementById('modalDesign').textContent = state.prompt.length > 30 ? state.prompt.substring(0, 30) + '...' : state.prompt || 'Custom upload';
-      document.getElementById('modalStyle').textContent = styleNames[state.style];
-      document.getElementById('modalSize').textContent = `${sizes[state.size].name} (${sizes[state.size].dims})`;
-      document.getElementById('modalQty').textContent = state.quantity;
-      document.getElementById('modalTotal').textContent = `$${getPrice()}`;
-      document.getElementById('orderModal').classList.add('visible');
+    // =================== Sheet Builder ===================
+
+    function showSheetModal() {
+      // Reset sheet state
+      state.sheet.size = state.size; // default to current size selection
+      state.sheet.counts = {};
+
+      // Auto-add current preview image as first slot
+      if (state.image && state.history.length > 0) {
+        const idx = state.history.findIndex(h => h.image === state.image);
+        if (idx >= 0) {
+          state.sheet.counts[idx] = 1;
+        }
+      }
+
+      // Sync toggle buttons
+      document.querySelectorAll('.sheet-size-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.size === state.sheet.size);
+      });
+
+      renderSheetModal();
+      document.getElementById('sheetModal').classList.add('visible');
     }
 
-    function hideOrderModal() {
-      document.getElementById('orderModal').classList.remove('visible');
+    function hideSheetModal() {
+      document.getElementById('sheetModal').classList.remove('visible');
     }
 
-    async function submitOrder() {
-      const email = document.getElementById('customerEmail').value.trim();
+    function trimSheetSlots() {
+      const max = getMaxSlots();
+      let total = getTotalSlots();
+      if (total <= max) return;
+
+      // Trim from the last-added designs (highest index keys added last)
+      const keys = Object.keys(state.sheet.counts).map(Number).reverse();
+      for (const k of keys) {
+        if (total <= max) break;
+        const remove = Math.min(state.sheet.counts[k], total - max);
+        state.sheet.counts[k] -= remove;
+        total -= remove;
+        if (state.sheet.counts[k] <= 0) delete state.sheet.counts[k];
+      }
+    }
+
+    function renderSheetModal() {
+      const max = getMaxSlots();
+      const filled = getTotalSlots();
+
+      // Slots indicator
+      document.getElementById('slotsIndicator').textContent = `${filled} / ${max} filled`;
+
+      // Preview row — small squares
+      const previewRow = document.getElementById('sheetPreviewRow');
+      let previewHTML = '';
+      // Build ordered list of slot images
+      const slotImages = [];
+      const sortedKeys = Object.keys(state.sheet.counts).map(Number).sort((a, b) => a - b);
+      for (const k of sortedKeys) {
+        const count = state.sheet.counts[k];
+        for (let i = 0; i < count; i++) {
+          slotImages.push(state.history[k]?.image || '');
+        }
+      }
+      for (let i = 0; i < max; i++) {
+        if (i < slotImages.length && slotImages[i]) {
+          previewHTML += `<div class="sheet-slot filled"><img src="${slotImages[i]}" alt="slot"></div>`;
+        } else {
+          previewHTML += `<div class="sheet-slot"></div>`;
+        }
+      }
+      previewRow.innerHTML = previewHTML;
+
+      // Thumbnail grid
+      const grid = document.getElementById('sheetThumbGrid');
+      if (state.history.length === 0) {
+        grid.innerHTML = '<div class="sheet-empty-hint">No designs yet. Generate some stickers first!</div>';
+      } else {
+        grid.innerHTML = state.history.map((item, i) => {
+          const count = state.sheet.counts[i] || 0;
+          const canAdd = filled < max;
+          const inUse = count > 0;
+          return `
+            <div class="sheet-thumb ${inUse ? 'in-use' : ''}" data-idx="${i}">
+              <img src="${item.image}" alt="${item.prompt}" title="${item.prompt}">
+              <div class="sheet-thumb-controls">
+                <button class="sheet-thumb-btn sheet-minus" data-idx="${i}" ${count === 0 ? 'disabled' : ''}>−</button>
+                <span class="sheet-thumb-count">${count}</span>
+                <button class="sheet-thumb-btn sheet-plus" data-idx="${i}" ${!canAdd ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Bind +/- buttons
+        grid.querySelectorAll('.sheet-plus').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.idx);
+            if (getTotalSlots() < getMaxSlots()) {
+              state.sheet.counts[idx] = (state.sheet.counts[idx] || 0) + 1;
+              renderSheetModal();
+            }
+          });
+        });
+        grid.querySelectorAll('.sheet-minus').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.idx);
+            if (state.sheet.counts[idx] > 0) {
+              state.sheet.counts[idx]--;
+              if (state.sheet.counts[idx] <= 0) delete state.sheet.counts[idx];
+              renderSheetModal();
+            }
+          });
+        });
+      }
+
+      // Price
+      document.getElementById('sheetPrice').textContent = filled > 0 ? formatPrice(getSheetPrice()) : '₡0';
+
+      // Submit button
+      document.getElementById('submitSheet').disabled = filled === 0;
+    }
+
+    async function submitSheetOrder() {
+      const email = document.getElementById('sheetEmail').value.trim();
       if (!email) {
         alert('Please enter your email address.');
         return;
       }
 
-      const orderData = {
-        prompt: state.prompt || 'Custom upload',
-        style: styleNames[state.style],
-        size: `${sizes[state.size].name} (${sizes[state.size].dims})`,
-        quantity: state.quantity,
-        total: getPrice(),
-        image: state.image,
-        customerEmail: document.getElementById('customerEmail').value
-      };
+      const filled = getTotalSlots();
+      if (filled === 0) {
+        alert('Please add at least one design to the sheet.');
+        return;
+      }
+
+      // Build unique images array and slots index array
+      const uniqueImages = [];
+      const imageIndexMap = {};   // history index -> position in uniqueImages
+      const slots = [];
+      const descParts = [];
+
+      const sortedKeys = Object.keys(state.sheet.counts).map(Number).sort((a, b) => a - b);
+      for (const hIdx of sortedKeys) {
+        const count = state.sheet.counts[hIdx];
+        if (count <= 0) continue;
+        const item = state.history[hIdx];
+        if (!item) continue;
+
+        if (!(hIdx in imageIndexMap)) {
+          imageIndexMap[hIdx] = uniqueImages.length;
+          uniqueImages.push(item.image);
+        }
+        const uIdx = imageIndexMap[hIdx];
+        for (let i = 0; i < count; i++) slots.push(uIdx);
+        descParts.push(`${item.prompt} x${count}`);
+      }
+
+      const sizeLabel = `${sizes[state.sheet.size].name} (${sizes[state.sheet.size].dims})`;
+      const totalSlots = slots.length;
+
+      // Client-side payload size check
+      const payloadStr = JSON.stringify({ images: uniqueImages });
+      const payloadMB = new Blob([payloadStr]).size / (1024 * 1024);
+      if (payloadMB > 9) {
+        alert(`Payload is ~${payloadMB.toFixed(1)} MB which may be too large. Try using fewer unique designs.`);
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitSheet');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Submitting...';
 
       try {
         await fetch('/api/order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderData)
+          body: JSON.stringify({
+            type: 'sheet',
+            images: uniqueImages,
+            slots: slots,
+            size: sizeLabel,
+            totalSlots: totalSlots,
+            total: getSheetPrice(),
+            descriptions: descParts,
+            customerEmail: email
+          })
         });
 
-        hideOrderModal();
-        alert(`Order submitted! 🎉\n\n${sizes[state.size].name} × ${state.quantity}\nTotal: $${getPrice()}\n\nWe'll be in touch soon!`);
+        hideSheetModal();
+        alert(`Order submitted! 🎉\n\n${sizeLabel} — ${totalSlots} stickers\nTotal: ${formatPrice(getSheetPrice())}\n\nWe'll be in touch soon!`);
       } catch (err) {
         alert('Order failed. Please try again.');
       }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = '✓ Submit Order';
     }
 
     init();

@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static('public'));
 
 // Trust Railway's proxy so req.ip gives the real client IP
@@ -321,7 +321,8 @@ app.get('/api/trials/:sessionId', (req, res) => {
 });
 
 // Generate a print-ready PDF with stickers tiled on A4
-function generatePrintPDF(imageBuffer, sizeKey, quantity) {
+// imageBuffers: array of Buffers, slots: array of indices into imageBuffers
+function generatePrintPDF(imageBuffers, sizeKey, slots) {
   return new Promise((resolve, reject) => {
     // A4 in points: 595.28 x 841.89
     const A4_W = 595.28;
@@ -336,6 +337,8 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
     };
     const sizeCm = sizeMap[sizeKey] || 7;
     const sizePt = sizeCm * CM_TO_PT;
+
+    const quantity = slots.length;
 
     // How many fit per row/col
     const cols = Math.floor((A4_W - 2 * MARGIN + GAP) / (sizePt + GAP));
@@ -372,8 +375,9 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
             .stroke();
           doc.restore();
 
-          // Place sticker image
-          doc.image(imageBuffer, x + 2, y + 2, {
+          // Place sticker image — each slot can reference a different image
+          const imgIdx = slots[placed];
+          doc.image(imageBuffers[imgIdx], x + 2, y + 2, {
             fit: [sizePt - 4, sizePt - 4],
             align: 'center',
             valign: 'center'
@@ -388,18 +392,46 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
   });
 }
 
+// Helper: parse a data-URL into { buffer, ext, base64 }
+function parseDataURL(dataUrl) {
+  const m = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (!m) return null;
+  return { ext: m[1] === 'jpeg' ? 'jpg' : m[1], base64: m[2], buffer: Buffer.from(m[2], 'base64') };
+}
+
 // API endpoint to submit order
 app.post('/api/order', async (req, res) => {
   try {
-    const { prompt, style, size, quantity, total, image, customerEmail } = req.body;
+    const { customerEmail, size, total } = req.body;
+
+    // Determine if this is a sheet order (new format) or legacy single-image order
+    const isSheet = req.body.type === 'sheet';
+
+    let images, slots, descriptions, quantity, prompt, style;
+    if (isSheet) {
+      images = req.body.images;           // array of data-URLs (unique)
+      slots = req.body.slots;             // indices into images
+      descriptions = req.body.descriptions || [];
+      quantity = req.body.totalSlots || slots.length;
+    } else {
+      // Legacy format — single image tiled
+      const img = req.body.image;
+      images = img ? [img] : [];
+      quantity = req.body.quantity || 1;
+      slots = Array.from({ length: quantity }, () => 0);
+      prompt = req.body.prompt;
+      style = req.body.style;
+      descriptions = [prompt || 'Custom upload'];
+    }
 
     console.log('New order received:', {
-      prompt,
-      style,
+      type: isSheet ? 'sheet' : 'legacy',
+      designs: images.length,
+      slots: slots.length,
       size,
-      quantity,
       total,
       customerEmail,
+      descriptions,
       timestamp: new Date().toISOString()
     });
 
@@ -410,34 +442,39 @@ app.post('/api/order', async (req, res) => {
     if (process.env.RESEND_API_KEY && process.env.BUSINESS_EMAIL) {
       try {
         const attachments = [];
+        const imageBuffers = [];
 
-        // Extract image and generate print PDF
-        if (image && image.startsWith('data:image/')) {
-          const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
-          if (matches) {
-            const imageBuffer = Buffer.from(matches[2], 'base64');
-
-            // Attach original image
-            const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        // Parse each unique image, attach originals, collect buffers for PDF
+        images.forEach((dataUrl, i) => {
+          const parsed = parseDataURL(dataUrl);
+          if (parsed) {
+            imageBuffers.push(parsed.buffer);
             attachments.push({
-              filename: `sticker-${Date.now()}.${ext}`,
-              content: matches[2]
+              filename: `sticker-${i + 1}-${Date.now()}.${parsed.ext}`,
+              content: parsed.base64
             });
+          }
+        });
 
-            // Generate and attach print-ready PDF
-            try {
-              console.log('Generating print PDF...');
-              const pdfBuffer = await generatePrintPDF(imageBuffer, size, quantity);
-              attachments.push({
-                filename: `print-ready-${quantity}x-${size.replace(/[^a-zA-Z0-9]/g, '')}.pdf`,
-                content: pdfBuffer.toString('base64')
-              });
-              console.log('Print PDF generated');
-            } catch (pdfErr) {
-              console.error('PDF generation failed:', pdfErr.message);
-            }
+        // Generate and attach print-ready PDF
+        if (imageBuffers.length > 0) {
+          try {
+            console.log('Generating print PDF...');
+            const pdfBuffer = await generatePrintPDF(imageBuffers, size, slots);
+            attachments.push({
+              filename: `print-ready-${slots.length}x-${size.replace(/[^a-zA-Z0-9]/g, '')}.pdf`,
+              content: pdfBuffer.toString('base64')
+            });
+            console.log('Print PDF generated');
+          } catch (pdfErr) {
+            console.error('PDF generation failed:', pdfErr.message);
           }
         }
+
+        const designList = descriptions.join(', ');
+        const subjectLine = isSheet
+          ? `New Sheet Order - ${images.length} designs, ${slots.length} stickers`
+          : `New Sticker Order - ${size} x ${quantity}`;
 
         console.log('Sending order email to:', process.env.BUSINESS_EMAIL);
         const emailRes = await fetch('https://api.resend.com/emails', {
@@ -449,18 +486,18 @@ app.post('/api/order', async (req, res) => {
           body: JSON.stringify({
             from: process.env.EMAIL_FROM || 'Sticker Studio <onboarding@resend.dev>',
             to: [process.env.BUSINESS_EMAIL],
-            subject: `New Sticker Order - ${size} x ${quantity}`,
+            subject: subjectLine,
             html: `
               <h2>New Sticker Order!</h2>
-              <p><strong>Design:</strong> ${prompt}</p>
-              <p><strong>Style:</strong> ${style}</p>
+              <p><strong>Type:</strong> ${isSheet ? 'Mixed Sheet' : 'Single Design'}</p>
+              <p><strong>Designs:</strong> ${designList}</p>
               <p><strong>Size:</strong> ${size}</p>
-              <p><strong>Quantity:</strong> ${quantity}</p>
-              <p><strong>Total:</strong> $${total}</p>
+              <p><strong>Stickers on sheet:</strong> ${slots.length}</p>
+              <p><strong>Total:</strong> ₡${total}</p>
               <p><strong>Customer Email:</strong> ${customerEmail}</p>
               <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
               <hr>
-              <p>📎 <strong>Attachments:</strong> Original image + print-ready PDF (A4, tiled with cut lines)</p>
+              <p>📎 <strong>Attachments:</strong> ${imageBuffers.length} original image(s) + print-ready PDF (A4, tiled with cut lines)</p>
             `,
             attachments
           })
