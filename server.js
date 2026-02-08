@@ -331,11 +331,10 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
     const GAP = 0.2 * CM_TO_PT;
 
     const sizeMap = {
-      'Small (5×5cm)': 5,
       'Medium (7×7cm)': 7,
       'Large (10×10cm)': 10
     };
-    const sizeCm = sizeMap[sizeKey] || 5;
+    const sizeCm = sizeMap[sizeKey] || 7;
     const sizePt = sizeCm * CM_TO_PT;
 
     // How many fit per row/col

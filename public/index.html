@@ -141,7 +141,7 @@
 
     .size-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 10px;
       margin-top: 8px;
     }
@@ -565,17 +565,15 @@
         <div class="form-group">
           <label>Size:</label>
           <div class="size-grid" id="sizeGrid">
-            <button class="size-btn active" data-size="small">
-              <div class="name">Small</div>
-              <div class="dims">5×5cm</div>
-            </button>
-            <button class="size-btn" data-size="medium">
+            <button class="size-btn active" data-size="medium">
               <div class="name">Medium</div>
               <div class="dims">7×7cm</div>
+              <div class="dims">8 per sheet</div>
             </button>
             <button class="size-btn" data-size="large">
               <div class="name">Large</div>
               <div class="dims">10×10cm</div>
+              <div class="dims">4 per sheet</div>
             </button>
           </div>
         </div>
@@ -627,7 +625,7 @@
             </div>
             <div class="summary-row">
               <span class="label">Size:</span>
-              <span class="value" id="summarySize">Small (5×5cm)</span>
+              <span class="value" id="summarySize">Medium (7×7cm)</span>
             </div>
             <div class="summary-row">
               <span class="label">Quantity:</span>
@@ -717,7 +715,7 @@
     const state = {
       prompt: '',
       style: 'realistic',
-      size: 'small',
+      size: 'medium',
       quantity: 1,
       image: null,
       trialsRemaining: 5,
@@ -728,9 +726,8 @@
     localStorage.setItem('sessionId', state.sessionId);
 
     const sizes = {
-      small: { name: 'Small', dims: '5×5cm', multiplier: 1, perSheet: 24 },
-      medium: { name: 'Medium', dims: '7×7cm', multiplier: 1.5, perSheet: 12 },
-      large: { name: 'Large', dims: '10×10cm', multiplier: 2, perSheet: 6 }
+      medium: { name: 'Medium', dims: '7×7cm', multiplier: 1, perSheet: 8 },
+      large: { name: 'Large', dims: '10×10cm', multiplier: 1.5, perSheet: 4 }
     };
 
     const styleNames = {
