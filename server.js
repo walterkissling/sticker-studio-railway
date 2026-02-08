@@ -16,6 +16,7 @@ app.use(express.static('public'));
 app.set('trust proxy', 1);
 
 const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT) || 5;
+const ADMIN_IPS = (process.env.ADMIN_IPS || '').split(',').map(ip => ip.trim()).filter(Boolean);
 
 // IP-based rate limiting store
 const ipStore = new Map();
@@ -37,7 +38,13 @@ function getRateLimit(ip) {
   return entry;
 }
 
+function isAdmin(req) {
+  const ip = getClientIP(req);
+  return ADMIN_IPS.includes(ip);
+}
+
 function checkRateLimit(req, res) {
+  if (isAdmin(req)) return { used: 0, skipCount: true };
   const ip = getClientIP(req);
   const limit = getRateLimit(ip);
   const remaining = Math.max(0, DAILY_LIMIT - limit.used);
@@ -113,8 +120,8 @@ app.post('/api/generate', async (req, res) => {
       return res.status(500).json({ error: 'Gemini API key not configured. Add GEMINI_API_KEY to Railway variables.' });
     }
 
-    // Content safety check
-    if (!isPromptSafe(prompt)) {
+    // Content safety check (skip for admin)
+    if (!isAdmin(req) && !isPromptSafe(prompt)) {
       return res.status(400).json({ error: 'Your prompt contains content that is not allowed. Please keep it family-friendly!' });
     }
 
@@ -178,8 +185,8 @@ Important: White background, die-cut sticker style, centered composition, high q
     }
 
     // Count this generation
-    limit.used++;
-    const remaining = Math.max(0, DAILY_LIMIT - limit.used);
+    if (!limit.skipCount) limit.used++;
+    const remaining = limit.skipCount ? 999 : Math.max(0, DAILY_LIMIT - limit.used);
 
     res.json({
       image: `data:image/png;base64,${imageData}`,
@@ -209,8 +216,8 @@ app.post('/api/edit', async (req, res) => {
       return res.status(500).json({ error: 'Gemini API key not configured.' });
     }
 
-    // Content safety check
-    if (!isPromptSafe(editPrompt)) {
+    // Content safety check (skip for admin)
+    if (!isAdmin(req) && !isPromptSafe(editPrompt)) {
       return res.status(400).json({ error: 'Your prompt contains content that is not allowed. Please keep it family-friendly!' });
     }
 
@@ -289,8 +296,8 @@ Keep it as a sticker design with white background, die-cut style, centered compo
     }
 
     // Count this edit
-    limit.used++;
-    const remaining = Math.max(0, DAILY_LIMIT - limit.used);
+    if (!limit.skipCount) limit.used++;
+    const remaining = limit.skipCount ? 999 : Math.max(0, DAILY_LIMIT - limit.used);
 
     res.json({
       image: `data:image/png;base64,${imageData}`,
@@ -305,6 +312,7 @@ Keep it as a sticker design with white background, die-cut style, centered compo
 
 // API endpoint to get remaining generations
 app.get('/api/trials/:sessionId', (req, res) => {
+  if (isAdmin(req)) return res.json({ trialsRemaining: 999 });
   const ip = getClientIP(req);
   const limit = getRateLimit(ip);
   const remaining = Math.max(0, DAILY_LIMIT - limit.used);
