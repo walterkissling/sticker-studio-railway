@@ -337,25 +337,10 @@ app.post('/api/order', async (req, res) => {
     // Respond immediately so the customer isn't waiting
     res.json({ success: true, message: 'Order received!' });
 
-    // Send email in the background
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.BUSINESS_EMAIL) {
+    // Send email in the background via Resend API (HTTP, no SMTP needed)
+    if (process.env.RESEND_API_KEY && process.env.BUSINESS_EMAIL) {
       try {
-        const nodemailer = require('nodemailer');
-
-        const transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          },
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 15000
-        });
-
-        // Extract image data for attachment
+        // Build attachment
         const attachments = [];
         if (image && image.startsWith('data:image/')) {
           const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
@@ -363,32 +348,41 @@ app.post('/api/order', async (req, res) => {
             const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
             attachments.push({
               filename: `sticker-order-${Date.now()}.${ext}`,
-              content: matches[2],
-              encoding: 'base64',
-              cid: 'stickerimage'
+              content: matches[2]
             });
           }
         }
 
         console.log('Sending order email to:', process.env.BUSINESS_EMAIL);
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: process.env.BUSINESS_EMAIL,
-          subject: `New Sticker Order - ${size} x ${quantity}`,
-          html: `
-            <h2>New Sticker Order!</h2>
-            <p><strong>Design:</strong> ${prompt}</p>
-            <p><strong>Style:</strong> ${style}</p>
-            <p><strong>Size:</strong> ${size}</p>
-            <p><strong>Quantity:</strong> ${quantity}</p>
-            <p><strong>Total:</strong> $${total}</p>
-            <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
-            <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-            ${attachments.length ? '<hr><p><strong>Sticker Image:</strong></p><img src="cid:stickerimage" style="max-width:400px;border-radius:12px;">' : ''}
-          `,
-          attachments
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: process.env.EMAIL_FROM || 'Sticker Studio <onboarding@resend.dev>',
+            to: [process.env.BUSINESS_EMAIL],
+            subject: `New Sticker Order - ${size} x ${quantity}`,
+            html: `
+              <h2>New Sticker Order!</h2>
+              <p><strong>Design:</strong> ${prompt}</p>
+              <p><strong>Style:</strong> ${style}</p>
+              <p><strong>Size:</strong> ${size}</p>
+              <p><strong>Quantity:</strong> ${quantity}</p>
+              <p><strong>Total:</strong> $${total}</p>
+              <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
+              <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            `,
+            attachments
+          })
         });
-        console.log('Order email sent successfully');
+        const emailData = await emailRes.json();
+        if (emailRes.ok) {
+          console.log('Order email sent successfully:', emailData.id);
+        } else {
+          console.error('Email send failed:', emailData);
+        }
       } catch (emailErr) {
         console.error('Email send failed:', emailErr.message);
       }
