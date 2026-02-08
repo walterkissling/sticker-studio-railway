@@ -335,6 +335,11 @@ app.post('/api/order', async (req, res) => {
     });
 
     // If nodemailer is configured, send email
+    console.log('Email config check:', {
+      hasEmailUser: !!process.env.EMAIL_USER,
+      hasEmailPass: !!process.env.EMAIL_PASS,
+      hasBusinessEmail: !!process.env.BUSINESS_EMAIL
+    });
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.BUSINESS_EMAIL) {
       const nodemailer = require('nodemailer');
       
@@ -361,6 +366,7 @@ app.post('/api/order', async (req, res) => {
         }
       }
 
+      console.log('Sending order email to:', process.env.BUSINESS_EMAIL);
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: process.env.BUSINESS_EMAIL,
@@ -380,9 +386,10 @@ app.post('/api/order', async (req, res) => {
       });
     }
 
+    console.log('Order processed successfully');
     res.json({ success: true, message: 'Order received!' });
   } catch (error) {
-    console.error('Order error:', error);
+    console.error('Order error:', error.message, error.stack);
     res.status(500).json({ error: 'Failed to process order' });
   }
 });
