@@ -828,10 +828,18 @@
         document.getElementById(id).addEventListener('change', saveSettings);
       });
 
-      document.getElementById('resetTrials').addEventListener('click', () => {
-        state.trialsRemaining = 3;
-        updateTrialBadge();
-        showStatus('Trials reset!', 'success');
+      document.getElementById('resetTrials').addEventListener('click', async () => {
+        try {
+          const res = await fetch(`/api/trials/${state.sessionId}/reset`, { method: 'POST' });
+          const data = await res.json();
+          state.trialsRemaining = data.trialsRemaining;
+          updateTrialBadge();
+          showStatus('Trials reset!', 'success');
+        } catch (e) {
+          state.trialsRemaining = 3;
+          updateTrialBadge();
+          showStatus('Trials reset locally', 'success');
+        }
       });
 
       document.getElementById('orderModal').addEventListener('click', (e) => {

@@ -252,6 +252,14 @@ app.get('/api/trials/:sessionId', (req, res) => {
   res.json({ trialsRemaining: trial.count });
 });
 
+// API endpoint to reset trials
+app.post('/api/trials/:sessionId/reset', (req, res) => {
+  const trial = getTrials(req.params.sessionId);
+  trial.count = 3;
+  trial.lastReset = Date.now();
+  res.json({ trialsRemaining: trial.count });
+});
+
 // API endpoint to submit order
 app.post('/api/order', async (req, res) => {
   try {
