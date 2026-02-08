@@ -703,8 +703,8 @@
         </div>
       </div>
       <div style="margin-top: 16px;">
-        <label>Your Email (optional):</label>
-        <input type="email" id="customerEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; margin-top: 6px;">
+        <label>Your Email:</label>
+        <input type="email" id="customerEmail" placeholder="your@email.com" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; margin-top: 6px;">
       </div>
       <div class="modal-actions">
         <button class="btn-outline" id="cancelOrder">Cancel</button>
@@ -1052,6 +1052,12 @@
     }
 
     async function submitOrder() {
+      const email = document.getElementById('customerEmail').value.trim();
+      if (!email) {
+        alert('Please enter your email address.');
+        return;
+      }
+
       const orderData = {
         prompt: state.prompt || 'Custom upload',
         style: styleNames[state.style],
