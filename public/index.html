@@ -534,7 +534,7 @@
       <h1>✨ Sticker Studio ✨</h1>
       <p>Create custom AI-powered stickers</p>
       <div class="trial-badge" id="trialBadge">
-        🎁 <span id="trialCount">3</span> free designs remaining
+        🎁 <span id="trialCount">5</span> designs remaining today
       </div>
     </header>
 
@@ -720,7 +720,7 @@
       size: 'small',
       quantity: 1,
       image: null,
-      trialsRemaining: 3,
+      trialsRemaining: 5,
       sessionId: localStorage.getItem('sessionId') || Math.random().toString(36).substr(2, 9),
       history: JSON.parse(localStorage.getItem('stickerHistory') || '[]')
     };
@@ -851,7 +851,7 @@
         trialBadge.classList.add('warning');
       } else if (state.trialsRemaining <= 0) {
         trialBadge.classList.add('expired');
-        trialBadge.innerHTML = '🎁 Free trials used';
+        trialBadge.innerHTML = '🎁 Daily limit reached - come back tomorrow!';
       }
     }
 

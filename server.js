@@ -12,21 +12,64 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
-// Store for rate limiting free trials (in production, use Redis or database)
-const trialStore = new Map();
+// Trust Railway's proxy so req.ip gives the real client IP
+app.set('trust proxy', 1);
 
-// Get or create trial count for a session
-function getTrials(sessionId) {
-  if (!trialStore.has(sessionId)) {
-    trialStore.set(sessionId, { count: 3, lastReset: Date.now() });
+const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT) || 5;
+
+// IP-based rate limiting store
+const ipStore = new Map();
+
+function getClientIP(req) {
+  return req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
+}
+
+function getRateLimit(ip) {
+  if (!ipStore.has(ip)) {
+    ipStore.set(ip, { used: 0, resetAt: Date.now() + 24 * 60 * 60 * 1000 });
   }
-  const trial = trialStore.get(sessionId);
-  // Reset trials after 24 hours
-  if (Date.now() - trial.lastReset > 24 * 60 * 60 * 1000) {
-    trial.count = 3;
-    trial.lastReset = Date.now();
+  const entry = ipStore.get(ip);
+  // Reset after 24 hours
+  if (Date.now() > entry.resetAt) {
+    entry.used = 0;
+    entry.resetAt = Date.now() + 24 * 60 * 60 * 1000;
   }
-  return trial;
+  return entry;
+}
+
+function checkRateLimit(req, res) {
+  const ip = getClientIP(req);
+  const limit = getRateLimit(ip);
+  const remaining = Math.max(0, DAILY_LIMIT - limit.used);
+  if (remaining <= 0) {
+    const hoursLeft = Math.ceil((limit.resetAt - Date.now()) / (1000 * 60 * 60));
+    res.status(429).json({
+      error: `Daily limit reached (${DAILY_LIMIT} per day). Try again in ~${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}.`,
+      trialsRemaining: 0
+    });
+    return null;
+  }
+  return limit;
+}
+
+// Content safety filter
+const BLOCKED_WORDS = [
+  'nude', 'naked', 'nsfw', 'porn', 'sex', 'sexual', 'erotic', 'hentai',
+  'gore', 'blood', 'murder', 'kill', 'torture', 'mutilat', 'dismember',
+  'gun', 'rifle', 'pistol', 'weapon', 'bomb', 'explos', 'terrorist',
+  'drug', 'cocaine', 'heroin', 'meth',
+  'racist', 'slur', 'hate', 'nazi', 'swastika',
+  'suicide', 'self-harm', 'cutting'
+];
+
+function isPromptSafe(prompt) {
+  const lower = prompt.toLowerCase();
+  for (const word of BLOCKED_WORDS) {
+    if (lower.includes(word)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Style configurations
@@ -60,7 +103,7 @@ const styles = {
 // API endpoint to generate sticker using Gemini
 app.post('/api/generate', async (req, res) => {
   try {
-    const { prompt, style, sessionId } = req.body;
+    const { prompt, style } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -70,15 +113,21 @@ app.post('/api/generate', async (req, res) => {
       return res.status(500).json({ error: 'Gemini API key not configured. Add GEMINI_API_KEY to Railway variables.' });
     }
 
-    // Check trials
-    const trial = getTrials(sessionId || 'default');
-    
+    // Content safety check
+    if (!isPromptSafe(prompt)) {
+      return res.status(400).json({ error: 'Your prompt contains content that is not allowed. Please keep it family-friendly!' });
+    }
+
+    // Check IP rate limit
+    const limit = checkRateLimit(req, res);
+    if (!limit) return;
+
     const styleConfig = styles[style] || styles.realistic;
     
     // Build the full prompt
     const fullPrompt = `Generate an image of a sticker design: ${prompt}. 
 Style: ${styleConfig.prompt}. 
-Important: White background, die-cut sticker style, centered composition, high quality, vibrant colors, clean edges suitable for printing as a physical sticker.`;
+Important: White background, die-cut sticker style, centered composition, high quality, vibrant colors, clean edges suitable for printing as a physical sticker. Must be family-friendly and safe for all ages. No violence, nudity, weapons, or offensive content.`;
 
     console.log('Generating image with Gemini:', fullPrompt);
 
@@ -128,12 +177,13 @@ Important: White background, die-cut sticker style, centered composition, high q
       throw new Error('No image generated. Try a different prompt.');
     }
 
-    // Decrement trials
-    if (trial.count > 0) trial.count--;
+    // Count this generation
+    limit.used++;
+    const remaining = Math.max(0, DAILY_LIMIT - limit.used);
 
     res.json({
       image: `data:image/png;base64,${imageData}`,
-      trialsRemaining: trial.count
+      trialsRemaining: remaining
     });
 
   } catch (error) {
@@ -145,7 +195,7 @@ Important: White background, die-cut sticker style, centered composition, high q
 // API endpoint to EDIT an existing image using Gemini
 app.post('/api/edit', async (req, res) => {
   try {
-    const { editPrompt, currentImage, sessionId } = req.body;
+    const { editPrompt, currentImage } = req.body;
 
     if (!editPrompt) {
       return res.status(400).json({ error: 'Edit instructions are required' });
@@ -159,8 +209,14 @@ app.post('/api/edit', async (req, res) => {
       return res.status(500).json({ error: 'Gemini API key not configured.' });
     }
 
-    // Check trials
-    const trial = getTrials(sessionId || 'default');
+    // Content safety check
+    if (!isPromptSafe(editPrompt)) {
+      return res.status(400).json({ error: 'Your prompt contains content that is not allowed. Please keep it family-friendly!' });
+    }
+
+    // Check IP rate limit
+    const limit = checkRateLimit(req, res);
+    if (!limit) return;
 
     // Extract base64 data from data URL
     const base64Data = currentImage.replace(/^data:image\/\w+;base64,/, '');
@@ -174,7 +230,7 @@ app.post('/api/edit', async (req, res) => {
     }
 
     const fullPrompt = `Edit this sticker image: ${editPrompt}. 
-Keep it as a sticker design with white background, die-cut style, centered composition, high quality, vibrant colors, clean edges suitable for printing.`;
+Keep it as a sticker design with white background, die-cut style, centered composition, high quality, vibrant colors, clean edges suitable for printing. Must be family-friendly and safe for all ages. No violence, nudity, weapons, or offensive content.`;
 
     console.log('Editing image with Gemini:', fullPrompt);
 
@@ -232,12 +288,13 @@ Keep it as a sticker design with white background, die-cut style, centered compo
       throw new Error('Could not edit image. Try different instructions.');
     }
 
-    // Decrement trials
-    if (trial.count > 0) trial.count--;
+    // Count this edit
+    limit.used++;
+    const remaining = Math.max(0, DAILY_LIMIT - limit.used);
 
     res.json({
       image: `data:image/png;base64,${imageData}`,
-      trialsRemaining: trial.count
+      trialsRemaining: remaining
     });
 
   } catch (error) {
@@ -246,18 +303,12 @@ Keep it as a sticker design with white background, die-cut style, centered compo
   }
 });
 
-// API endpoint to get trial count
+// API endpoint to get remaining generations
 app.get('/api/trials/:sessionId', (req, res) => {
-  const trial = getTrials(req.params.sessionId);
-  res.json({ trialsRemaining: trial.count });
-});
-
-// API endpoint to reset trials
-app.post('/api/trials/:sessionId/reset', (req, res) => {
-  const trial = getTrials(req.params.sessionId);
-  trial.count = 3;
-  trial.lastReset = Date.now();
-  res.json({ trialsRemaining: trial.count });
+  const ip = getClientIP(req);
+  const limit = getRateLimit(ip);
+  const remaining = Math.max(0, DAILY_LIMIT - limit.used);
+  res.json({ trialsRemaining: remaining });
 });
 
 // API endpoint to submit order
