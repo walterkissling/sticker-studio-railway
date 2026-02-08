@@ -334,60 +334,65 @@ app.post('/api/order', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // If nodemailer is configured, send email
-    console.log('Email config check:', {
-      hasEmailUser: !!process.env.EMAIL_USER,
-      hasEmailPass: !!process.env.EMAIL_PASS,
-      hasBusinessEmail: !!process.env.BUSINESS_EMAIL
-    });
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.BUSINESS_EMAIL) {
-      const nodemailer = require('nodemailer');
-      
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
-      });
-
-      // Extract image data for attachment
-      const attachments = [];
-      if (image && image.startsWith('data:image/')) {
-        const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
-        if (matches) {
-          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-          attachments.push({
-            filename: `sticker-order-${Date.now()}.${ext}`,
-            content: matches[2],
-            encoding: 'base64',
-            cid: 'stickerimage'
-          });
-        }
-      }
-
-      console.log('Sending order email to:', process.env.BUSINESS_EMAIL);
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: process.env.BUSINESS_EMAIL,
-        subject: `New Sticker Order - ${size} x ${quantity}`,
-        html: `
-          <h2>New Sticker Order!</h2>
-          <p><strong>Design:</strong> ${prompt}</p>
-          <p><strong>Style:</strong> ${style}</p>
-          <p><strong>Size:</strong> ${size}</p>
-          <p><strong>Quantity:</strong> ${quantity}</p>
-          <p><strong>Total:</strong> $${total}</p>
-          <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
-          <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-          ${attachments.length ? '<hr><p><strong>Sticker Image:</strong></p><img src="cid:stickerimage" style="max-width:400px;border-radius:12px;">' : ''}
-        `,
-        attachments
-      });
-    }
-
-    console.log('Order processed successfully');
+    // Respond immediately so the customer isn't waiting
     res.json({ success: true, message: 'Order received!' });
+
+    // Send email in the background
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS && process.env.BUSINESS_EMAIL) {
+      try {
+        const nodemailer = require('nodemailer');
+
+        const transporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 15000
+        });
+
+        // Extract image data for attachment
+        const attachments = [];
+        if (image && image.startsWith('data:image/')) {
+          const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
+          if (matches) {
+            const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+            attachments.push({
+              filename: `sticker-order-${Date.now()}.${ext}`,
+              content: matches[2],
+              encoding: 'base64',
+              cid: 'stickerimage'
+            });
+          }
+        }
+
+        console.log('Sending order email to:', process.env.BUSINESS_EMAIL);
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: process.env.BUSINESS_EMAIL,
+          subject: `New Sticker Order - ${size} x ${quantity}`,
+          html: `
+            <h2>New Sticker Order!</h2>
+            <p><strong>Design:</strong> ${prompt}</p>
+            <p><strong>Style:</strong> ${style}</p>
+            <p><strong>Size:</strong> ${size}</p>
+            <p><strong>Quantity:</strong> ${quantity}</p>
+            <p><strong>Total:</strong> $${total}</p>
+            <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
+            <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+            ${attachments.length ? '<hr><p><strong>Sticker Image:</strong></p><img src="cid:stickerimage" style="max-width:400px;border-radius:12px;">' : ''}
+          `,
+          attachments
+        });
+        console.log('Order email sent successfully');
+      } catch (emailErr) {
+        console.error('Email send failed:', emailErr.message);
+      }
+    }
   } catch (error) {
     console.error('Order error:', error.message, error.stack);
     res.status(500).json({ error: 'Failed to process order' });
