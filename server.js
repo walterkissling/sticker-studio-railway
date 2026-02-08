@@ -326,11 +326,10 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
     // A4 in points: 595.28 x 841.89
     const A4_W = 595.28;
     const A4_H = 841.89;
-    const CM_TO_PT = 28.35; // 1cm = 28.35 points
-    const MARGIN = 1 * CM_TO_PT; // 1cm margin
-    const GAP = 0.3 * CM_TO_PT; // 0.3cm gap between stickers
+    const CM_TO_PT = 28.35;
+    const MARGIN = 0.5 * CM_TO_PT;
+    const GAP = 0.2 * CM_TO_PT;
 
-    // Size in cm
     const sizeMap = {
       'Small (5×5cm)': 5,
       'Medium (7×7cm)': 7,
@@ -345,6 +344,12 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
     const perPage = cols * rows;
     const totalPages = Math.ceil(quantity / perPage);
 
+    // Center the grid on the page
+    const gridW = cols * sizePt + (cols - 1) * GAP;
+    const gridH = rows * sizePt + (rows - 1) * GAP;
+    const offsetX = (A4_W - gridW) / 2;
+    const offsetY = (A4_H - gridH) / 2;
+
     const doc = new PDFDocument({ size: 'A4', margin: 0 });
     const chunks = [];
     doc.on('data', (chunk) => chunks.push(chunk));
@@ -355,11 +360,10 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
     for (let page = 0; page < totalPages; page++) {
       if (page > 0) doc.addPage({ size: 'A4', margin: 0 });
 
-      // Draw cut lines and stickers
       for (let row = 0; row < rows && placed < quantity; row++) {
         for (let col = 0; col < cols && placed < quantity; col++) {
-          const x = MARGIN + col * (sizePt + GAP);
-          const y = MARGIN + row * (sizePt + GAP);
+          const x = offsetX + col * (sizePt + GAP);
+          const y = offsetY + row * (sizePt + GAP);
 
           // Light cut line border
           doc.save();
@@ -371,8 +375,6 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
 
           // Place sticker image
           doc.image(imageBuffer, x + 2, y + 2, {
-            width: sizePt - 4,
-            height: sizePt - 4,
             fit: [sizePt - 4, sizePt - 4],
             align: 'center',
             valign: 'center'
@@ -381,11 +383,6 @@ function generatePrintPDF(imageBuffer, sizeKey, quantity) {
           placed++;
         }
       }
-
-      // Footer
-      doc.fontSize(8).fillColor('#999999')
-        .text(`Sticker Studio - ${sizeCm}x${sizeCm}cm - Page ${page + 1}/${totalPages}`,
-          MARGIN, A4_H - MARGIN + 5, { width: A4_W - 2 * MARGIN, align: 'center' });
     }
 
     doc.end();
