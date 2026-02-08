@@ -287,6 +287,21 @@ app.post('/api/order', async (req, res) => {
         }
       });
 
+      // Extract image data for attachment
+      const attachments = [];
+      if (image && image.startsWith('data:image/')) {
+        const matches = image.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (matches) {
+          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+          attachments.push({
+            filename: `sticker-order-${Date.now()}.${ext}`,
+            content: matches[2],
+            encoding: 'base64',
+            cid: 'stickerimage'
+          });
+        }
+      }
+
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: process.env.BUSINESS_EMAIL,
@@ -300,7 +315,9 @@ app.post('/api/order', async (req, res) => {
           <p><strong>Total:</strong> $${total}</p>
           <p><strong>Customer Email:</strong> ${customerEmail || 'Not provided'}</p>
           <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-        `
+          ${attachments.length ? '<hr><p><strong>Sticker Image:</strong></p><img src="cid:stickerimage" style="max-width:400px;border-radius:12px;">' : ''}
+        `,
+        attachments
       });
     }
 
