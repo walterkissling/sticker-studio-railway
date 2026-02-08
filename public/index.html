@@ -1078,9 +1078,16 @@
       // Avoid duplicates of the exact same image
       state.history = state.history.filter(h => h.image !== image);
       state.history.unshift({ image, prompt, date: Date.now() });
-      // Keep max 20 entries to avoid localStorage limits
-      if (state.history.length > 20) state.history = state.history.slice(0, 20);
-      localStorage.setItem('stickerHistory', JSON.stringify(state.history));
+      if (state.history.length > 12) state.history = state.history.slice(0, 12);
+      // Retry with fewer entries if localStorage quota is exceeded
+      while (state.history.length > 0) {
+        try {
+          localStorage.setItem('stickerHistory', JSON.stringify(state.history));
+          break;
+        } catch (e) {
+          state.history.pop();
+        }
+      }
       renderHistory();
     }
 
