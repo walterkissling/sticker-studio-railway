@@ -328,7 +328,7 @@ function generatePrintPDF(imageBuffers, sizeKey, slots) {
     const A4_W = 595.28;
     const A4_H = 841.89;
     const CM_TO_PT = 28.35;
-    const MARGIN = 0.5 * CM_TO_PT;
+    const MARGIN = 0.3 * CM_TO_PT;
     const GAP = 0.2 * CM_TO_PT;
 
     const sizeMap = {
