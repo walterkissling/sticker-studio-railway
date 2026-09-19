@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "nested-cards",
+        "value": "*",
+        "files": [
+          "public/index.html"
+        ],
+        "createdAt": "2026-09-15T14:43:02.758Z",
+        "reason": "Impeccable-assigned lunchbox direction 195852b5: tray wells and lid face are compartments inside the box by design; Walter delegated the roll"
+      }
+    ]
+  }
+}

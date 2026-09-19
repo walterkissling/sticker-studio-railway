@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-15T08:50:00-06:00",
+  "title": "Design System: Sticker Studio",
+  "extensions": {
+    "colorMeta": {
+      "ketchup": { "role": "primary", "displayName": "Ketchup Enamel", "canonical": "#D8232F", "tonalRamp": ["#3B0A0D", "#5E0F14", "#8C1119", "#A9161F", "#D8232F", "#EE4A54", "#F59AA0", "#FCE1E3"] },
+      "mustard": { "role": "secondary", "displayName": "Mustard (live accent)", "canonical": "#F3B41B", "tonalRamp": ["#3F2C03", "#6B4A05", "#9A6D06", "#C58A08", "#F3B41B", "#F7C956", "#FBE7A8", "#FEF6DF"] },
+      "sky": { "role": "tertiary", "displayName": "Sky Enamel", "canonical": "#4FA8E0", "tonalRamp": ["#0E2A3F", "#17456A", "#2E7FB8", "#3C93CC", "#4FA8E0", "#7EC2EB", "#A9D8F4", "#E6F3FC"] },
+      "navy": { "role": "on-tertiary", "displayName": "Lid Navy", "canonical": "#10304A", "tonalRamp": ["#081722", "#10304A", "#1A4666", "#265D84", "#3A78A3", "#6E9FC2", "#A8C6DC", "#E1ECF4"] },
+      "chrome-2": { "role": "outline", "displayName": "Chrome", "canonical": "#D5DBE1", "tonalRamp": ["#2A3037", "#3F474F", "#5C6670", "#76808A", "#8E98A3", "#B4BCC4", "#D5DBE1", "#FFFFFF"] },
+      "enamel": { "role": "surface", "displayName": "White Enamel", "canonical": "#FFFFFF", "tonalRamp": ["#2C2A28", "#4A4744", "#6B6763", "#8D8984", "#B0ADA8", "#D1CFCB", "#F1F4F7", "#FFFFFF"] },
+      "ink": { "role": "on-surface", "displayName": "Warm Ink", "canonical": "#1E1B18", "tonalRamp": ["#1E1B18", "#33302C", "#4A4640", "#5A544D", "#77716A", "#9A948C", "#BFBAB3", "#E4E1DC"] },
+      "cloth": { "role": "background", "displayName": "Gingham Cloth", "canonical": "#F3F9FD", "tonalRamp": ["#0F2230", "#1C3B52", "#2E5A78", "#4F86A8", "#7FB1D0", "#B4D5EA", "#DCEBF7", "#F3F9FD"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Nameplate", "purpose": "The Sticker Studio nameplate only. Lilita One 400 in ketchup-ink with a 1px white text-shadow." },
+      "headline": { "displayName": "Modal title / price", "purpose": "Dialog headings and the sheet price, in ketchup." },
+      "title-large": { "displayName": "Latch / stash title", "purpose": "The Make my sticker latch and the stash heading." },
+      "title": { "displayName": "Compartment title", "purpose": "Well titles (ketchup) and the lid title (navy)." },
+      "emphasis": { "displayName": "Emphasis", "purpose": "Promise, tag price, stickers-left count, placeholder copy, thumb +/- glyphs." },
+      "body": { "displayName": "Body", "purpose": "Copy, inputs, modal copy." },
+      "button": { "displayName": "Button", "purpose": "Enamel and ketchup buttons, size name, loading copy." },
+      "label": { "displayName": "Label", "purpose": "Field labels, hints, chips, tag, badge, status strip, summary rows." },
+      "caption": { "displayName": "Caption", "purpose": "Size dimensions, per-sheet counts, history labels. Tabular figures." }
+    },
+    "shadows": [
+      { "name": "well", "value": "inset 0 2px 6px rgba(30, 27, 24, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.9)", "purpose": "Every white enamel well and the lid actions well." },
+      { "name": "lid-recess", "value": "inset 0 3px 8px rgba(16, 48, 74, 0.45), inset 0 -2px 0 rgba(255, 255, 255, 0.3)", "purpose": "The sky lid face. Stash interior and sheet bench use inset 0 3px 8px rgba(16, 48, 74, 0.4)." },
+      { "name": "shadow-sticker", "value": "0 1px 1px rgba(30, 27, 24, 0.12), 0 10px 20px -8px rgba(30, 27, 24, 0.45)", "purpose": "Every sticker on the lid, in the stash and in the edit modal." },
+      { "name": "shadow-box", "value": "0 2px 0 rgba(30, 27, 24, 0.08), 0 26px 40px -22px rgba(16, 48, 74, 0.55)", "purpose": "The lunchbox on the cloth, after its chrome rim rings." },
+      { "name": "shadow-modal", "value": "0 4px 6px rgba(16, 48, 74, 0.12), 0 36px 70px -28px rgba(16, 48, 74, 0.6)", "purpose": "Dialogs, after an inset chrome rim and an 8px ketchup ring." },
+      { "name": "chrome-rim", "value": "0 0 0 3px #D5DBE1, 0 0 0 4px #5C6670", "purpose": "Handle and nameplate rim; the box uses 4px/6px, the latch 4px/5px." },
+      { "name": "hardware-lip", "value": "0 2px 0 #5C6670", "purpose": "Thickness of a pressable control (chrome-3, chrome-4 or ketchup-deep). Press moves the control down by the lip and removes it. Latch lip is 0 5px 0 5px #5C6670." },
+      { "name": "paper", "value": "0 1px 0 rgba(30, 27, 24, 0.1), 0 10px 18px -10px rgba(16, 48, 74, 0.6)", "purpose": "The A4 sheet on the sky bench." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.2, 0.8, 0.2, 1)", "purpose": "Every state change: border, background, colour, transform on press. 120 to 220ms." },
+      { "name": "ease-slap", "value": "cubic-bezier(0.34, 1.56, 0.64, 1)", "purpose": "Anything that lands: stickers, the active chip, stash hover, modal entry. 160 to 480ms." },
+      { "name": "slap", "value": "480ms ease-slap; from scale(1.22) rotate(-9deg) opacity 0; 60% opacity 1; to scale(1) rotate(-3deg)", "purpose": "A new design landing on the lid." },
+      { "name": "slapFlat", "value": "420ms ease-slap; from scale(1.3) rotate(-8deg) opacity 0; to none", "purpose": "A sticker placed on the A4 sheet." },
+      { "name": "micPulse", "value": "1.2s ease-out infinite; scale 1 to 1.5, opacity 0.9 to 0", "purpose": "Listening ring around the mustard mic." },
+      { "name": "plot", "value": "2.2s ease-in-out infinite; translateY 0 to 202px and back", "purpose": "Mustard plotter bar on the loading sticker." },
+      { "name": "modal-enter", "value": "280ms ease-slap; from translateY(14px) scale(0.98); overlay 220ms ease-out", "purpose": "Dialogs settling onto the scrim." }
+    ],
+    "breakpoints": [
+      { "name": "one-column", "value": "900px" },
+      { "name": "compact", "value": "640px" },
+      { "name": "narrow", "value": "420px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Latch",
+      "kind": "button",
+      "refersTo": "latch",
+      "description": "The make action: ketchup gradient with chrome rim and a 5px lip. Press drops 4px.",
+      "html": "<button class=\"ds-latch\">Make my sticker</button>",
+      "css": ".ds-latch { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 60px; padding: 0 18px; border: 0; border-radius: 18px; font-family: 'Lilita One', 'Baloo 2', 'Trebuchet MS', sans-serif; font-weight: 400; font-size: 1.375rem; letter-spacing: 0.02em; color: #FFFFFF; background: linear-gradient(180deg, #D8232F 0%, #D8232F 55%, #A9161F 100%); box-shadow: inset 0 3px 0 rgba(255,255,255,0.28), 0 0 0 4px #D5DBE1, 0 0 0 5px #5C6670, 0 5px 0 5px #5C6670, 0 12px 18px -8px rgba(30,27,24,0.6); cursor: pointer; transition: background 140ms cubic-bezier(0.2,0.8,0.2,1), transform 120ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 120ms cubic-bezier(0.2,0.8,0.2,1); } .ds-latch:hover { background: linear-gradient(180deg, #A9161F 0%, #A9161F 55%, #8C1119 100%); } .ds-latch:active { transform: translateY(4px); box-shadow: inset 0 2px 0 rgba(255,255,255,0.3), 0 0 0 4px #D5DBE1, 0 0 0 5px #5C6670, 0 1px 0 5px #5C6670, 0 4px 8px -6px rgba(30,27,24,0.6); } .ds-latch:focus-visible { outline: 3px solid #F3B41B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Order Button",
+      "kind": "button",
+      "refersTo": "button-order",
+      "description": "Ketchup fill with a 2px ketchup-deep lip. Order a sheet, Submit order.",
+      "html": "<button class=\"ds-btn-order\">Order a sheet</button>",
+      "css": ".ds-btn-order { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border: 0; border-radius: 14px; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; font-weight: 800; font-size: 1rem; color: #FFFFFF; background: #D8232F; box-shadow: inset 0 2px 0 rgba(255,255,255,0.25), 0 2px 0 #A9161F, 0 6px 10px -6px rgba(30,27,24,0.5); cursor: pointer; transition: background 140ms cubic-bezier(0.2,0.8,0.2,1), transform 120ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 120ms cubic-bezier(0.2,0.8,0.2,1); } .ds-btn-order:hover:not(:disabled) { background: #A9161F; } .ds-btn-order:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 #A9161F; } .ds-btn-order:disabled { opacity: 0.5; cursor: not-allowed; } .ds-btn-order:focus-visible { outline: 3px solid #F3B41B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Enamel Button",
+      "kind": "button",
+      "refersTo": "button-enamel",
+      "description": "White enamel with an inset chrome ring and a 2px chrome lip. New, Edit, Cancel.",
+      "html": "<button class=\"ds-btn-enamel\">Edit</button>",
+      "css": ".ds-btn-enamel { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border: 0; border-radius: 14px; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; font-weight: 800; font-size: 1rem; color: #1E1B18; background: #FFFFFF; box-shadow: inset 0 0 0 2px #D5DBE1, 0 2px 0 #8E98A3; cursor: pointer; transition: transform 120ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 120ms cubic-bezier(0.2,0.8,0.2,1); } .ds-btn-enamel:hover { box-shadow: inset 0 0 0 2px #8E98A3, 0 2px 0 #5C6670; } .ds-btn-enamel:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px #8E98A3; } .ds-btn-enamel:focus-visible { outline: 3px solid #F3B41B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Style Chip",
+      "kind": "chip",
+      "refersTo": "chip-style",
+      "description": "Style picker. The active chip fills mustard, tilts -2deg and scales 1.04 with ease-slap.",
+      "html": "<div style=\"display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-width:360px\"><button class=\"ds-chip ds-chip-active\">Realistic</button><button class=\"ds-chip\">Cartoon</button><button class=\"ds-chip\">Kawaii</button><button class=\"ds-chip\">Neon</button></div>",
+      "css": ".ds-chip { padding: 9px 6px; border: 2px solid #D5DBE1; border-radius: 10px; background: #FFFFFF; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 0.875rem; font-weight: 700; color: #1E1B18; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: border-color 140ms cubic-bezier(0.2,0.8,0.2,1), background 140ms cubic-bezier(0.2,0.8,0.2,1), transform 160ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 140ms cubic-bezier(0.2,0.8,0.2,1); } .ds-chip:hover { border-color: #8E98A3; } .ds-chip:active { transform: scale(0.96); } .ds-chip-active { border-color: #C58A08; background: #F3B41B; transform: rotate(-2deg) scale(1.04); box-shadow: 0 4px 8px -4px rgba(30,27,24,0.45); } .ds-chip:focus-visible { outline: 3px solid #F3B41B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White enamel with a 2px chrome border. Focus turns the border mustard with a mustard-soft halo.",
+      "html": "<input class=\"ds-input\" placeholder=\"A puppy in sunglasses at the beach\">",
+      "css": ".ds-input { width: 100%; padding: 12px 14px; border: 2px solid #D5DBE1; border-radius: 14px; background: #FFFFFF; color: #1E1B18; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 1rem; line-height: 1.4; caret-color: #D8232F; transition: border-color 160ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 160ms cubic-bezier(0.2,0.8,0.2,1); } .ds-input::placeholder { color: #5A544D; } .ds-input:hover { border-color: #8E98A3; } .ds-input:focus { outline: none; border-color: #F3B41B; box-shadow: 0 0 0 3px #FBE7A8; }"
+    },
+    {
+      "name": "Language Toggle and Mic",
+      "kind": "nav",
+      "refersTo": "chip-style-active",
+      "description": "Segmented EN/ES on an enamel-2 track plus a 38px chrome mic. Active language and listening mic are mustard.",
+      "html": "<div style=\"display:flex;align-items:center;gap:8px\"><div class=\"ds-lang\"><button class=\"ds-lang-btn ds-lang-active\">EN</button><button class=\"ds-lang-btn\">ES</button></div><button class=\"ds-mic\" aria-label=\"Speak your sticker\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"9\" y=\"2\" width=\"6\" height=\"11\" rx=\"3\"></rect><path d=\"M5 11a7 7 0 0 0 14 0\"></path><path d=\"M12 18v4\"></path><path d=\"M8 22h8\"></path></svg></button><button class=\"ds-mic ds-mic-listening\" aria-label=\"Listening\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"9\" y=\"2\" width=\"6\" height=\"11\" rx=\"3\"></rect><path d=\"M5 11a7 7 0 0 0 14 0\"></path><path d=\"M12 18v4\"></path><path d=\"M8 22h8\"></path></svg></button></div>",
+      "css": ".ds-lang { display: inline-flex; border-radius: 10px; overflow: hidden; background: #F1F4F7; box-shadow: inset 0 0 0 2px #D5DBE1; } .ds-lang-btn { border: 0; background: transparent; padding: 7px 11px; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 0.875rem; font-weight: 800; letter-spacing: 0.04em; color: #5A544D; cursor: pointer; transition: background 140ms cubic-bezier(0.2,0.8,0.2,1), color 140ms cubic-bezier(0.2,0.8,0.2,1); } .ds-lang-btn:hover { color: #1E1B18; } .ds-lang-active { background: #F3B41B; color: #1E1B18; } .ds-mic { position: relative; width: 38px; height: 38px; border: 0; border-radius: 10px; background: linear-gradient(180deg, #FFFFFF 0%, #D5DBE1 45%, #8E98A3 55%, #D5DBE1 100%); color: #1E1B18; display: grid; place-items: center; box-shadow: 0 0 0 1px #5C6670, 0 2px 0 #5C6670; cursor: pointer; transition: background 140ms cubic-bezier(0.2,0.8,0.2,1), transform 120ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 120ms cubic-bezier(0.2,0.8,0.2,1); } .ds-mic svg { width: 20px; height: 20px; } .ds-mic:hover { background: #FFFFFF; } .ds-mic:active { transform: translateY(2px); box-shadow: 0 0 0 1px #5C6670; } .ds-mic-listening { background: #F3B41B; box-shadow: 0 0 0 1px #C58A08, 0 2px 0 #C58A08; } .ds-mic-listening::after { content: ''; position: absolute; inset: -2px; border: 2px solid #F3B41B; border-radius: inherit; animation: ds-mic-pulse 1.2s cubic-bezier(0.2,0.8,0.2,1) infinite; } @keyframes ds-mic-pulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } } .ds-lang-btn:focus-visible, .ds-mic:focus-visible { outline: 3px solid #F3B41B; outline-offset: 2px; }"
+    },
+    {
+      "name": "Sticker on the Lid",
+      "kind": "card",
+      "refersTo": "sticker",
+      "description": "Sky enamel lid face with sunburst; the design is a white-bordered sticker tilted -3deg that slaps in with ease-slap.",
+      "html": "<div class=\"ds-lid\"><h2 class=\"ds-lid-title\">Your sticker</h2><div class=\"ds-sticker\"><div class=\"ds-sticker-art\"></div></div></div>",
+      "css": ".ds-lid { padding: 14px; border-radius: 18px; background-color: #4FA8E0; background-image: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0) 45%), repeating-conic-gradient(from 0deg at 50% 46%, rgba(255,255,255,0.16) 0deg 9deg, rgba(255,255,255,0) 9deg 18deg); box-shadow: inset 0 3px 8px rgba(16,48,74,0.45), inset 0 -2px 0 rgba(255,255,255,0.3); display: grid; gap: 12px; justify-items: center; } .ds-lid-title { justify-self: start; font-family: 'Lilita One', 'Baloo 2', 'Trebuchet MS', sans-serif; font-weight: 400; font-size: 1.125rem; letter-spacing: 0.01em; line-height: 1.2; color: #10304A; margin: 0; } .ds-sticker { padding: 12px; background: #FFFFFF; border-radius: 22px; box-shadow: 0 1px 1px rgba(30,27,24,0.12), 0 10px 20px -8px rgba(30,27,24,0.45); transform: rotate(-3deg); animation: ds-slap 480ms cubic-bezier(0.34,1.56,0.64,1) both; margin: 12px 0 18px; } .ds-sticker-art { width: 160px; height: 160px; border-radius: 12px; background: radial-gradient(circle at 35% 30%, #FBE7A8, #F3B41B 55%, #D8232F 100%); } @keyframes ds-slap { from { transform: scale(1.22) rotate(-9deg); opacity: 0; } 60% { opacity: 1; } to { transform: scale(1) rotate(-3deg); opacity: 1; } }"
+    },
+    {
+      "name": "Tray Well",
+      "kind": "card",
+      "refersTo": "well",
+      "description": "White enamel well recessed with an inner shadow, no border, Lilita One title in ketchup.",
+      "html": "<div class=\"ds-well\"><h2 class=\"ds-well-title\">Size</h2><div class=\"ds-size-grid\"><button class=\"ds-size ds-size-active\"><span class=\"ds-size-name\">Medium</span><span class=\"ds-size-dims\">7×7 cm · 8 per sheet</span></button><button class=\"ds-size\"><span class=\"ds-size-name\">Large</span><span class=\"ds-size-dims\">10×10 cm · 4 per sheet</span></button></div></div>",
+      "css": ".ds-well { background: #FFFFFF; border-radius: 18px; padding: 14px 16px 16px; box-shadow: inset 0 2px 6px rgba(30,27,24,0.18), inset 0 -1px 0 rgba(255,255,255,0.9); } .ds-well-title { font-family: 'Lilita One', 'Baloo 2', 'Trebuchet MS', sans-serif; font-weight: 400; font-size: 1.125rem; letter-spacing: 0.01em; line-height: 1.2; color: #D8232F; margin: 0 0 10px; } .ds-size-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; } .ds-size { display: grid; gap: 2px; padding: 10px 12px; border: 2px solid #D5DBE1; border-radius: 14px; background: #FFFFFF; text-align: left; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; color: #1E1B18; cursor: pointer; transition: border-color 140ms cubic-bezier(0.2,0.8,0.2,1), background 140ms cubic-bezier(0.2,0.8,0.2,1), transform 120ms cubic-bezier(0.2,0.8,0.2,1); } .ds-size:hover { border-color: #8E98A3; } .ds-size:active { transform: scale(0.98); } .ds-size-active { border-color: #C58A08; background: #F3B41B; } .ds-size-name { font-weight: 800; font-size: 1rem; line-height: 1.2; } .ds-size-dims { font-size: 0.78rem; font-weight: 600; color: #5A544D; font-variant-numeric: tabular-nums; } .ds-size-active .ds-size-dims { color: #1E1B18; } .ds-size:focus-visible { outline: 3px solid #F3B41B; outline-offset: 2px; }"
+    },
+    {
+      "name": "A4 Sheet",
+      "kind": "custom",
+      "refersTo": "lid-face",
+      "description": "One continuous white A4 at 210/297 on the sky bench. Empty slots are faint dashed guides; a placed sticker slaps flat.",
+      "html": "<div class=\"ds-bench\"><div class=\"ds-sheet\"><div class=\"ds-slot ds-slot-filled\"><div class=\"ds-slot-art\"></div></div><div class=\"ds-slot\"></div><div class=\"ds-slot\"></div><div class=\"ds-slot\"></div></div><p class=\"ds-slots\">1 / 4 filled</p></div>",
+      "css": ".ds-bench { width: 220px; padding: 16px; border-radius: 18px; background-color: #4FA8E0; background-image: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(255,255,255,0) 50%), repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.14) 0deg 9deg, rgba(255,255,255,0) 9deg 18deg); box-shadow: inset 0 3px 8px rgba(16,48,74,0.4); } .ds-sheet { aspect-ratio: 210 / 297; width: 100%; background: #FFFFFF; border-radius: 3px; box-shadow: 0 1px 0 rgba(30,27,24,0.1), 0 10px 18px -10px rgba(16,48,74,0.6); display: grid; grid-template-columns: repeat(2, 47.619%); column-gap: 0.952%; row-gap: 0.673%; justify-content: center; align-content: center; } .ds-slot { aspect-ratio: 1; border: 1.5px dashed rgba(30,27,24,0.22); border-radius: 9%; overflow: hidden; } .ds-slot-filled { border-color: transparent; padding: 5%; } .ds-slot-art { width: 100%; height: 100%; border-radius: 7%; box-shadow: 0 0 0 1px rgba(30,27,24,0.08); background: radial-gradient(circle at 35% 30%, #FBE7A8, #F3B41B 55%, #D8232F 100%); animation: ds-slap-flat 420ms cubic-bezier(0.34,1.56,0.64,1) both; } @keyframes ds-slap-flat { from { transform: scale(1.3) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } } .ds-slots { margin: 10px 0 0; text-align: center; font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif; font-size: 0.875rem; font-weight: 800; color: #10304A; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Nameplate",
+      "kind": "custom",
+      "refersTo": "nameplate",
+      "description": "Riveted mustard nameplate under the red handle, chrome rim, Lilita One in ketchup-ink.",
+      "html": "<div class=\"ds-brand\"><div class=\"ds-handle\"></div><div class=\"ds-nameplate\"><h1>Sticker Studio</h1></div></div>",
+      "css": ".ds-brand { display: grid; justify-items: center; padding: 8px 12px 12px; } .ds-handle { width: 232px; height: 42px; border-radius: 21px; position: relative; background: linear-gradient(180deg, #EE4A54 0%, #D8232F 55%, #A9161F 100%); box-shadow: inset 0 2px 0 rgba(255,255,255,0.35), 0 0 0 3px #D5DBE1, 0 0 0 4px #5C6670, 0 6px 12px -6px rgba(30,27,24,0.5); } .ds-handle::before, .ds-handle::after, .ds-nameplate::before, .ds-nameplate::after { content: ''; position: absolute; top: 50%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFFFFF, #D5DBE1 45%, #5C6670); } .ds-handle::before, .ds-handle::after { width: 12px; height: 12px; margin-top: -6px; } .ds-handle::before { left: 14px; } .ds-handle::after { right: 14px; } .ds-nameplate { position: relative; margin-top: -6px; padding: 12px 38px 10px; background: #F3B41B; border-radius: 14px; box-shadow: inset 0 2px 0 rgba(255,255,255,0.55), 0 0 0 3px #D5DBE1, 0 0 0 4px #5C6670, 0 8px 14px -8px rgba(30,27,24,0.5); } .ds-nameplate::before, .ds-nameplate::after { width: 9px; height: 9px; margin-top: -4.5px; } .ds-nameplate::before { left: 12px; } .ds-nameplate::after { right: 12px; } .ds-nameplate h1 { margin: 0; font-family: 'Lilita One', 'Baloo 2', 'Trebuchet MS', sans-serif; font-weight: 400; font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem); line-height: 1; color: #8C1119; letter-spacing: 0.01em; text-shadow: 0 1px 0 rgba(255,255,255,0.55); white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Open Lunchbox",
+    "overview": "The page is an open illustrated metal lunchbox lying on a sky gingham tablecloth. The box is ketchup red enamel with a chrome rim and four corner rivets. Its two hard halves are joined by a vertical chrome hinge: the tray on the left is white enamel with molded wells where the kid describes, picks a style and a size, and presses the latch; the lid on the right is sky enamel with a printed sunburst, and that is where the sticker sticks. Above the box a chrome handle arcs over a riveted mustard nameplate. Below it the sticker stash is a second enamel tin with a sky interior.\n\nEverything a kid reads is set in Baloo 2; everything printed on the tin (nameplate, compartment titles, the latch, prices, modal headings) is Lilita One. Every design is shown as a sticker: a thick white kiss-cut border, tilted -3deg, that slaps onto the lid with an overshoot. Mustard is the one live colour; it appears only where something is selected, listening, in use, or focused. The world replaces the rejected print-shop cutting table (sage mat, CutContour magenta, Bricolage Grotesque) and the earlier purple SaaS look wholesale.",
+    "keyCharacteristics": [
+      "Ketchup enamel box with chrome rim and rivets on a sky gingham cloth",
+      "Two hard halves, tray and lid, joined by a chrome hinge; never two equal cards",
+      "Mustard alone owns every live and selected state",
+      "Lilita One tin lettering, Baloo 2 for reading",
+      "Every design is a white-bordered sticker tilted -3deg that slaps into place",
+      "Hardware has thickness: latch, buttons, rim and nameplate are drawn with chrome lips and pressed states"
+    ],
+    "rules": [
+      { "name": "The Mustard Is Live Rule", "body": "Mustard means selected, listening, in use or focused. It never fills a resting surface other than the nameplate and the stickers-left badge, and no other colour marks a live state.", "section": "colors" },
+      { "name": "The Two Halves Rule", "body": "Tray and lid are different materials: white enamel wells with an inner shadow versus sky enamel with a sunburst. They are never styled as two matching cards.", "section": "colors" },
+      { "name": "The Tin Print Rule", "body": "Lilita One is reserved for what would be printed on the tin: nameplate, compartment titles, the latch, prices and modal headings. It is never used for sentences, buttons other than the latch, or labels.", "section": "typography" },
+      { "name": "The Recess or Rim Rule", "body": "A surface is either recessed (inner shadow, no border) or hardware (chrome rim or lip, outer shadow). Nothing carries both an inner recess and an outer drop shadow.", "section": "elevation" },
+      { "name": "The Press Rule", "body": "A pressed control moves down by exactly its lip (2px buttons, 3px modal latch, 4px main latch) and its lip disappears. Hover never lifts; it darkens the fill or the border.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do show every design as a white-bordered sticker tilted -3deg with the sticker shadow, and land it with slap (ease-slap, 480ms) on the lid or slapFlat (420ms) on the sheet.",
+      "Do keep mustard for live and selected states only: active chip, size, language, listening mic, in-use thumb, focus ring, nameplate and stickers-left badge.",
+      "Do set tin lettering (nameplate, compartment titles, latch, prices, modal titles) in Lilita One 400 and everything else in Baloo 2 at 400, 600, 700 or 800.",
+      "Do draw pressable hardware with a chrome rim or lip and press it down by its lip height; recess resting surfaces with an inner shadow.",
+      "Do keep the A4 at 210/297 with 33.333% or 47.619% slots drawn as faint dashed guides on one continuous sheet."
+    ],
+    "donts": [
+      "Don't style tray and lid as two equal cards; the tray is white enamel wells, the lid is sky enamel with a sunburst.",
+      "Don't use a pill except the handle (21px on 42px); every other shape is a rounded square between 2px and 26px.",
+      "Don't add glows, glass blur, gradients outside the enamel and chrome ramps, emoji, or icon tiles; icons are 2px stroke SVG at 18 to 20px.",
+      "Don't put a second live colour anywhere, or use ketchup for a selected state.",
+      "Don't rename or remove JS-bound ids (emailGate, gateEmail, gateContinue, paypalButtons, sheetPreviewRow, historyGrid, styleGrid, sizeGrid and the rest) when restyling."
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
+const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 require('dotenv').config();
@@ -16,8 +17,70 @@ app.use(express.static('public'));
 // Trust Railway's proxy so req.ip gives the real client IP
 app.set('trust proxy', 1);
 
-const DAILY_LIMIT = parseInt(process.env.DAILY_LIMIT) || 5;
+const parsedLimit = parseInt(process.env.DAILY_LIMIT, 10);
+const DAILY_LIMIT = Number.isFinite(parsedLimit) ? parsedLimit : 20;
 const ADMIN_IPS = (process.env.ADMIN_IPS || '').split(',').map(ip => ip.trim()).filter(Boolean);
+
+const LEADS_PATH = path.join(__dirname, 'data', 'leads.json');
+
+function loadLeads() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(LEADS_PATH, 'utf8'));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function captureLead(email) {
+  const leads = loadLeads();
+  if (leads.some(lead => lead.email === email)) return { isNew: false };
+  leads.push({ email, firstSeen: new Date().toISOString() });
+  fs.mkdirSync(path.dirname(LEADS_PATH), { recursive: true });
+  fs.writeFileSync(LEADS_PATH, JSON.stringify(leads, null, 2));
+  notifyNewLead(email).catch(err => console.error('Lead notify failed:', err.message));
+  return { isNew: true };
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+function emailFrom() {
+  return process.env.EMAIL_FROM || 'Sticker Studio <onboarding@resend.dev>';
+}
+
+async function sendResendEmail({ to, subject, html, attachments }) {
+  if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY missing');
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: emailFrom(),
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      ...(attachments && attachments.length ? { attachments } : {})
+    })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || `Resend ${res.status}`);
+  return data;
+}
+
+async function notifyNewLead(email) {
+  if (!process.env.RESEND_API_KEY || !process.env.BUSINESS_EMAIL) return;
+  await sendResendEmail({
+    to: process.env.BUSINESS_EMAIL,
+    subject: 'New Sticker Studio email',
+    html: `<p>New email captured:</p><p><strong>${escapeHtml(email)}</strong></p><p>${escapeHtml(new Date().toLocaleString())}</p>`
+  });
+}
 
 // IP-based rate limiting store
 const ipStore = new Map();
@@ -44,20 +107,67 @@ function isAdmin(req) {
   return ADMIN_IPS.includes(ip);
 }
 
-function checkRateLimit(req, res) {
-  if (isAdmin(req)) return { used: 0, skipCount: true };
-  const ip = getClientIP(req);
-  const limit = getRateLimit(ip);
-  const remaining = Math.max(0, DAILY_LIMIT - limit.used);
+function normalizeEmail(raw) {
+  if (typeof raw !== 'string') return null;
+  const email = raw.trim().toLowerCase();
+  if (email.length > 254) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return null;
+  return email;
+}
+
+function remainingOf(entry) {
+  return Math.max(0, DAILY_LIMIT - entry.used);
+}
+
+function checkRateLimit(req, res, emailRaw) {
+  if (isAdmin(req) || DAILY_LIMIT <= 0) return { skipCount: true };
+
+  const email = normalizeEmail(emailRaw);
+  if (!email) {
+    res.status(400).json({ error: 'Enter your email before generating.' });
+    return null;
+  }
+
+  const emailLimit = getRateLimit(`email:${email}`);
+  const ipLimit = getRateLimit(`ip:${getClientIP(req)}`);
+  const remaining = Math.min(remainingOf(emailLimit), remainingOf(ipLimit));
   if (remaining <= 0) {
-    const hoursLeft = Math.ceil((limit.resetAt - Date.now()) / (1000 * 60 * 60));
+    const blocker = remainingOf(emailLimit) <= 0 ? emailLimit : ipLimit;
+    const hoursLeft = Math.ceil((blocker.resetAt - Date.now()) / (1000 * 60 * 60));
     res.status(429).json({
-      error: `Daily limit reached (${DAILY_LIMIT} per day). Try again in ~${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}.`,
+      error: `Daily limit reached (${DAILY_LIMIT} designs per day). Try again in ~${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}.`,
       trialsRemaining: 0
     });
     return null;
   }
-  return limit;
+  return { emailLimit, ipLimit, skipCount: false };
+}
+
+function consumeLimit(limit) {
+  if (!limit || limit.skipCount) return { trialsRemaining: null, unlimited: true };
+  limit.emailLimit.used++;
+  limit.ipLimit.used++;
+  return {
+    trialsRemaining: Math.min(remainingOf(limit.emailLimit), remainingOf(limit.ipLimit)),
+    unlimited: false
+  };
+}
+
+function trialsFor(req, emailRaw) {
+  if (isAdmin(req) || DAILY_LIMIT <= 0) {
+    return { trialsRemaining: null, unlimited: true };
+  }
+  const email = normalizeEmail(emailRaw);
+  if (!email) {
+    return { trialsRemaining: DAILY_LIMIT, unlimited: false, needsEmail: true };
+  }
+  return {
+    trialsRemaining: Math.min(
+      remainingOf(getRateLimit(`email:${email}`)),
+      remainingOf(getRateLimit(`ip:${getClientIP(req)}`))
+    ),
+    unlimited: false
+  };
 }
 
 // Content safety filter
@@ -108,12 +218,94 @@ const styles = {
   }
 };
 
+const GEMINI_MODEL = 'gemini-3.1-flash-lite-image';
+const GEMINI_GENERATION_CONFIG = {
+  responseModalities: ['TEXT', 'IMAGE'],
+  responseFormat: {
+    image: {
+      aspectRatio: 'ASPECT_RATIO_ONE_BY_ONE',
+      imageSize: 'IMAGE_SIZE_ONE_K'
+    }
+  }
+};
+
+function extractLastImage(data) {
+  let imageData = null;
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    const inline = part.inlineData || part.inline_data;
+    const mime = inline?.mimeType || inline?.mime_type || '';
+    if (inline?.data && mime.startsWith('image/')) {
+      imageData = inline.data;
+    }
+  }
+  return imageData;
+}
+
+function parseInlineImage(dataUrl) {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) return null;
+  const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+  let mimeType = 'image/png';
+  if (dataUrl.startsWith('data:image/jpeg')) mimeType = 'image/jpeg';
+  else if (dataUrl.startsWith('data:image/webp')) mimeType = 'image/webp';
+  return { mimeType, data: base64Data };
+}
+
+function coloringPagePrompt(userPrompt, fromPhoto) {
+  const subject = String(userPrompt || '').trim() || 'a fun animal';
+  const lead = fromPhoto
+    ? `Turn this photo into a printable kids coloring-book page. Keep the main subject recognizable. Extra request: ${subject}.`
+    : `Create a printable kids coloring-book page of: ${subject}.`;
+  return `${lead}
+Black ink outlines only on a pure white background.
+No color, no gray shading, no gradients, no watercolor, no stickers, no die-cut.
+Thick even lines, simple closed shapes a child can color with crayons, lots of open white space.
+Centered full-page illustration. No watermark, no signature, no decorative frame.
+Family-friendly. Do not add text unless the user asked for words.`;
+}
+
+async function generateGeminiImage(parts, generationConfig = GEMINI_GENERATION_CONFIG) {
+  const geminiResponse = await fetch(
+    `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig,
+      }),
+    }
+  );
+
+  if (!geminiResponse.ok) {
+    const errorText = await geminiResponse.text();
+    console.error('Gemini error:', geminiResponse.status, errorText.slice(0, 500));
+    if (geminiResponse.status === 429 && errorText.includes('free_tier')) {
+      throw new Error('This Gemini key is on the free-tier bucket (quota 0). In AI Studio pick the billed project, create a new key, paste it in .env');
+    }
+    throw new Error(`Gemini API error: ${geminiResponse.status}`);
+  }
+
+  const data = await geminiResponse.json();
+  const imageData = extractLastImage(data);
+  if (!imageData) {
+    console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 500));
+    throw new Error('No image generated. Try a different prompt.');
+  }
+  return imageData;
+}
+
 // API endpoint to generate sticker using Gemini
 app.post('/api/generate', async (req, res) => {
   try {
     const { prompt, style } = req.body;
+    const mode = req.body.mode === 'coloring' ? 'coloring' : 'sticker';
+    const incoming = parseInlineImage(req.body.image);
 
-    if (!prompt) {
+    if (!prompt && !(mode === 'coloring' && incoming)) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
@@ -122,76 +314,32 @@ app.post('/api/generate', async (req, res) => {
     }
 
     // Content safety check (skip for admin)
-    if (!isAdmin(req) && !isPromptSafe(prompt)) {
+    if (!isAdmin(req) && prompt && !isPromptSafe(prompt)) {
       return res.status(400).json({ error: 'Your prompt contains content that is not allowed. Please keep it family-friendly!' });
     }
 
-    // Check IP rate limit
-    const limit = checkRateLimit(req, res);
+    const limit = checkRateLimit(req, res, req.body.email);
     if (!limit) return;
 
     const styleConfig = styles[style] || styles.realistic;
-    
-    // Build the full prompt
-    const fullPrompt = `Generate an image of a sticker design: ${prompt}. 
+    const fullPrompt = mode === 'coloring'
+      ? coloringPagePrompt(prompt, Boolean(incoming))
+      : `Generate an image of a sticker design: ${prompt}. 
 Style: ${styleConfig.prompt}. 
 Important: White background, die-cut sticker style, centered composition, high quality, vibrant colors, clean edges suitable for printing as a physical sticker. Must be family-friendly and safe for all ages. No violence, nudity, weapons, or offensive content.`;
 
     console.log('Generating image with Gemini:', fullPrompt);
 
-    // Use Gemini's image generation
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: fullPrompt
-            }]
-          }],
-          generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"]
-          }
-        })
-      }
-    );
+    const parts = incoming
+      ? [{ inlineData: { mimeType: incoming.mimeType, data: incoming.data } }, { text: fullPrompt }]
+      : [{ text: fullPrompt }];
+    const imageData = await generateGeminiImage(parts);
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini error:', geminiResponse.status, errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
-
-    const data = await geminiResponse.json();
-    
-    // Extract image from response
-    let imageData = null;
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      const parts = data.candidates[0].content.parts;
-      for (const part of parts) {
-        if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
-          imageData = part.inlineData.data;
-          break;
-        }
-      }
-    }
-
-    if (!imageData) {
-      console.error('No image in Gemini response:', JSON.stringify(data).substring(0, 500));
-      throw new Error('No image generated. Try a different prompt.');
-    }
-
-    // Count this generation
-    if (!limit.skipCount) limit.used++;
-    const remaining = limit.skipCount ? 999 : Math.max(0, DAILY_LIMIT - limit.used);
+    const usage = consumeLimit(limit);
 
     res.json({
       image: `data:image/png;base64,${imageData}`,
-      trialsRemaining: remaining
+      ...usage
     });
 
   } catch (error) {
@@ -204,6 +352,7 @@ Important: White background, die-cut sticker style, centered composition, high q
 app.post('/api/edit', async (req, res) => {
   try {
     const { editPrompt, currentImage } = req.body;
+    const mode = req.body.mode === 'coloring' ? 'coloring' : 'sticker';
 
     if (!editPrompt) {
       return res.status(400).json({ error: 'Edit instructions are required' });
@@ -222,87 +371,32 @@ app.post('/api/edit', async (req, res) => {
       return res.status(400).json({ error: 'Your prompt contains content that is not allowed. Please keep it family-friendly!' });
     }
 
-    // Check IP rate limit
-    const limit = checkRateLimit(req, res);
+    const limit = checkRateLimit(req, res, req.body.email);
     if (!limit) return;
 
-    // Extract base64 data from data URL
-    const base64Data = currentImage.replace(/^data:image\/\w+;base64,/, '');
-    
-    // Determine mime type
-    let mimeType = 'image/png';
-    if (currentImage.startsWith('data:image/jpeg')) {
-      mimeType = 'image/jpeg';
-    } else if (currentImage.startsWith('data:image/webp')) {
-      mimeType = 'image/webp';
+    const incoming = parseInlineImage(currentImage);
+    if (!incoming) {
+      return res.status(400).json({ error: 'Current image is required' });
     }
 
-    const fullPrompt = `Edit this sticker image: ${editPrompt}. 
+    const fullPrompt = mode === 'coloring'
+      ? `Edit this coloring-book page: ${editPrompt}.
+Keep black ink outlines only on a pure white background. No color fills, no gray shading, thick even lines, printable kids coloring page.`
+      : `Edit this sticker image: ${editPrompt}. 
 Keep it as a sticker design with white background, die-cut style, centered composition, high quality, vibrant colors, clean edges suitable for printing. Must be family-friendly and safe for all ages. No violence, nudity, weapons, or offensive content.`;
 
     console.log('Editing image with Gemini:', fullPrompt);
 
-    // Use Gemini with the image input for editing
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Data
-                }
-              },
-              {
-                text: fullPrompt
-              }
-            ]
-          }],
-          generationConfig: {
-            responseModalities: ["IMAGE", "TEXT"]
-          }
-        })
-      }
-    );
+    const imageData = await generateGeminiImage([
+      { inlineData: { mimeType: incoming.mimeType, data: incoming.data } },
+      { text: fullPrompt }
+    ]);
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini edit error:', geminiResponse.status, errorText);
-      throw new Error(`Gemini API error: ${geminiResponse.status}`);
-    }
-
-    const data = await geminiResponse.json();
-    
-    // Extract image from response
-    let imageData = null;
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      const parts = data.candidates[0].content.parts;
-      for (const part of parts) {
-        if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
-          imageData = part.inlineData.data;
-          break;
-        }
-      }
-    }
-
-    if (!imageData) {
-      console.error('No image in Gemini edit response:', JSON.stringify(data).substring(0, 500));
-      throw new Error('Could not edit image. Try different instructions.');
-    }
-
-    // Count this edit
-    if (!limit.skipCount) limit.used++;
-    const remaining = limit.skipCount ? 999 : Math.max(0, DAILY_LIMIT - limit.used);
+    const usage = consumeLimit(limit);
 
     res.json({
       image: `data:image/png;base64,${imageData}`,
-      trialsRemaining: remaining
+      ...usage
     });
 
   } catch (error) {
@@ -313,11 +407,110 @@ Keep it as a sticker design with white background, die-cut style, centered compo
 
 // API endpoint to get remaining generations
 app.get('/api/trials/:sessionId', (req, res) => {
-  if (isAdmin(req)) return res.json({ trialsRemaining: 999 });
-  const ip = getClientIP(req);
-  const limit = getRateLimit(ip);
-  const remaining = Math.max(0, DAILY_LIMIT - limit.used);
-  res.json({ trialsRemaining: remaining });
+  res.json(trialsFor(req, req.query.email));
+});
+
+app.post('/api/gate', (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  if (!email) return res.status(400).json({ error: 'Enter a valid email.' });
+  captureLead(email);
+  res.json({ email, ...trialsFor(req, email) });
+});
+
+app.get('/api/dictation/status', (req, res) => {
+  res.json({ available: Boolean(process.env.XAI_API_KEY) });
+});
+
+function buildSttMultipart(language, buffer, filename, mime) {
+  const boundary = '----StickerDictation' + Date.now();
+  const pre = [
+    `--${boundary}\r\nContent-Disposition: form-data; name="format"\r\n\r\ntrue\r\n`,
+    `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${language}\r\n`,
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mime}\r\n\r\n`
+  ].join('');
+  return {
+    body: Buffer.concat([Buffer.from(pre), buffer, Buffer.from(`\r\n--${boundary}--\r\n`)]),
+    contentType: `multipart/form-data; boundary=${boundary}`
+  };
+}
+
+function extractGeminiText(data) {
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  return parts.map(p => p.text || '').join('').trim();
+}
+
+async function transcribeWithGemini(audio, mime, language) {
+  const cleanMime = (mime || 'audio/webm').split(';')[0];
+  const prompt = language === 'es'
+    ? 'Transcribe este audio. Devuelve solo las palabras habladas, sin comillas ni explicacion.'
+    : 'Transcribe this audio. Return only the spoken words, no quotes or explanation.';
+  const geminiRes = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': process.env.GEMINI_API_KEY
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inlineData: { mimeType: cleanMime, data: audio } },
+            { text: prompt }
+          ]
+        }]
+      })
+    }
+  );
+  if (!geminiRes.ok) {
+    const errText = await geminiRes.text();
+    console.error('Gemini STT error:', geminiRes.status, errText.slice(0, 300));
+    throw new Error('Transcription failed. Try again.');
+  }
+  const text = extractGeminiText(await geminiRes.json());
+  return { text, language };
+}
+
+app.post('/api/dictation', async (req, res) => {
+  const language = req.body.language === 'es' ? 'es' : 'en';
+  const mime = typeof req.body.mime === 'string' ? req.body.mime : 'audio/webm';
+  const audio = req.body.audio;
+  if (!audio || typeof audio !== 'string') {
+    return res.status(400).json({ error: 'Audio is required' });
+  }
+  const buffer = Buffer.from(audio, 'base64');
+  if (!buffer.length) {
+    return res.status(400).json({ error: 'Audio is required' });
+  }
+  try {
+    if (process.env.XAI_API_KEY) {
+      const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+      const packed = buildSttMultipart(language, buffer, `dictation.${ext}`, mime);
+      const sttRes = await fetch('https://api.x.ai/v1/stt', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+          'Content-Type': packed.contentType
+        },
+        body: packed.body
+      });
+      if (!sttRes.ok) {
+        const errText = await sttRes.text();
+        console.error('STT error:', sttRes.status, errText.slice(0, 300));
+        return res.status(502).json({ error: 'Transcription failed. Try again.' });
+      }
+      const data = await sttRes.json();
+      return res.json({ text: data.text || '', language: data.language || language });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ error: 'Speech is not configured.' });
+    }
+    const result = await transcribeWithGemini(audio, mime, language);
+    res.json(result);
+  } catch (error) {
+    console.error('Dictation error:', error.message);
+    res.status(500).json({ error: error.message || 'Transcription failed. Try again.' });
+  }
 });
 
 // Generate a print-ready PDF with stickers tiled on A4
@@ -399,10 +592,154 @@ function parseDataURL(dataUrl) {
   return { ext: m[1] === 'jpeg' ? 'jpg' : m[1], base64: m[2], buffer: Buffer.from(m[2], 'base64') };
 }
 
+const SHEET_PRICE_USD = process.env.SHEET_PRICE_USD || '4.00';
+const SHEET_PRICE_CRC = '2,000';
+const PAYPAL_CURRENCY = process.env.PAYPAL_CURRENCY || 'USD';
+const PAYPAL_MODE = process.env.PAYPAL_MODE === 'live' ? 'live' : 'sandbox';
+const capturedPaypalOrders = new Set();
+let paypalToken = { value: null, expiresAt: 0 };
+
+function paypalConfigured() {
+  return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
+}
+
+function paypalApiBase() {
+  return PAYPAL_MODE === 'live'
+    ? 'https://api-m.paypal.com'
+    : 'https://api-m.sandbox.paypal.com';
+}
+
+async function paypalAccessToken() {
+  if (paypalToken.value && Date.now() < paypalToken.expiresAt) return paypalToken.value;
+  const auth = Buffer.from(
+    `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
+  ).toString('base64');
+  const res = await fetch(`${paypalApiBase()}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: 'grant_type=client_credentials'
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error_description || data.error || 'PayPal auth failed');
+  }
+  paypalToken = {
+    value: data.access_token,
+    expiresAt: Date.now() + Math.max(30, (data.expires_in || 300) - 60) * 1000
+  };
+  return paypalToken.value;
+}
+
+async function paypalRequest(pathname, { method = 'GET', body } = {}) {
+  const token = await paypalAccessToken();
+  const res = await fetch(`${paypalApiBase()}${pathname}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const detail = data.message || data.error_description || data.name || 'PayPal request failed';
+    const err = new Error(detail);
+    err.status = res.status;
+    err.details = data;
+    throw err;
+  }
+  return data;
+}
+
+function paypalCaptureOk(order) {
+  if (!order || order.status !== 'COMPLETED') return false;
+  const capture = order.purchase_units?.[0]?.payments?.captures?.[0];
+  const amount = capture?.amount;
+  return capture?.status === 'COMPLETED'
+    && amount?.currency_code === PAYPAL_CURRENCY
+    && amount?.value === SHEET_PRICE_USD;
+}
+
+app.get('/api/paypal/config', (req, res) => {
+  res.json({
+    enabled: paypalConfigured(),
+    clientId: paypalConfigured() ? process.env.PAYPAL_CLIENT_ID : null,
+    mode: PAYPAL_MODE,
+    currency: PAYPAL_CURRENCY,
+    amount: SHEET_PRICE_USD,
+    displayPrice: SHEET_PRICE_CRC
+  });
+});
+
+app.post('/api/paypal/create-order', async (req, res) => {
+  if (!paypalConfigured()) {
+    return res.status(503).json({ error: 'PayPal is not configured' });
+  }
+  try {
+    const order = await paypalRequest('/v2/checkout/orders', {
+      method: 'POST',
+      body: {
+        intent: 'CAPTURE',
+        purchase_units: [{
+          description: 'Sticker Studio A4 sheet',
+          amount: { currency_code: PAYPAL_CURRENCY, value: SHEET_PRICE_USD }
+        }],
+        application_context: {
+          shipping_preference: 'NO_SHIPPING'
+        }
+      }
+    });
+    res.json({ id: order.id });
+  } catch (err) {
+    console.error('PayPal create-order failed:', err.message);
+    res.status(err.status || 502).json({ error: 'Could not start PayPal checkout' });
+  }
+});
+
+app.post('/api/paypal/capture-order', async (req, res) => {
+  if (!paypalConfigured()) {
+    return res.status(503).json({ error: 'PayPal is not configured' });
+  }
+  const orderID = typeof req.body?.orderID === 'string' ? req.body.orderID.trim() : '';
+  if (!orderID) return res.status(400).json({ error: 'Missing orderID' });
+  try {
+    const order = await paypalRequest(`/v2/checkout/orders/${encodeURIComponent(orderID)}/capture`, {
+      method: 'POST'
+    });
+    if (!paypalCaptureOk(order)) {
+      return res.status(402).json({ error: 'Payment was not completed' });
+    }
+    res.json({ id: order.id, status: order.status });
+  } catch (err) {
+    console.error('PayPal capture-order failed:', err.message);
+    res.status(err.status || 502).json({ error: 'Could not capture PayPal payment' });
+  }
+});
+
 // API endpoint to submit order
 app.post('/api/order', async (req, res) => {
   try {
     const { customerEmail, size, total } = req.body;
+    const paypalOrderId = typeof req.body?.paypalOrderId === 'string'
+      ? req.body.paypalOrderId.trim()
+      : '';
+
+    if (paypalConfigured()) {
+      if (!paypalOrderId) {
+        return res.status(402).json({ error: 'Payment required' });
+      }
+      if (capturedPaypalOrders.has(paypalOrderId)) {
+        return res.status(409).json({ error: 'This payment was already used' });
+      }
+      const paid = await paypalRequest(`/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`);
+      if (!paypalCaptureOk(paid)) {
+        return res.status(402).json({ error: 'Payment was not completed' });
+      }
+      capturedPaypalOrders.add(paypalOrderId);
+    }
 
     // Determine if this is a sheet order (new format) or legacy single-image order
     const isSheet = req.body.type === 'sheet';
@@ -438,8 +775,8 @@ app.post('/api/order', async (req, res) => {
     // Respond immediately so the customer isn't waiting
     res.json({ success: true, message: 'Order received!' });
 
-    // Send email in the background via Resend API
-    if (process.env.RESEND_API_KEY && process.env.BUSINESS_EMAIL) {
+    // Send emails in the background via Resend
+    if (process.env.RESEND_API_KEY) {
       try {
         const attachments = [];
         const imageBuffers = [];
@@ -476,37 +813,53 @@ app.post('/api/order', async (req, res) => {
           ? `New Sheet Order - ${images.length} designs, ${slots.length} stickers`
           : `New Sticker Order - ${size} x ${quantity}`;
 
-        console.log('Sending order email to:', process.env.BUSINESS_EMAIL);
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || 'Sticker Studio <onboarding@resend.dev>',
-            to: [process.env.BUSINESS_EMAIL],
-            subject: subjectLine,
-            html: `
+        if (process.env.BUSINESS_EMAIL) {
+          try {
+            console.log('Sending shop order email to:', process.env.BUSINESS_EMAIL);
+            await sendResendEmail({
+              to: process.env.BUSINESS_EMAIL,
+              subject: subjectLine,
+              html: `
               <h2>New Sticker Order!</h2>
               <p><strong>Type:</strong> ${isSheet ? 'Mixed Sheet' : 'Single Design'}</p>
-              <p><strong>Designs:</strong> ${designList}</p>
-              <p><strong>Size:</strong> ${size}</p>
+              <p><strong>Designs:</strong> ${escapeHtml(designList)}</p>
+              <p><strong>Size:</strong> ${escapeHtml(size)}</p>
               <p><strong>Stickers on sheet:</strong> ${slots.length}</p>
-              <p><strong>Total:</strong> ₡${total}</p>
-              <p><strong>Customer Email:</strong> ${customerEmail}</p>
-              <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+              <p><strong>Total:</strong> ₡${escapeHtml(total)}${paypalConfigured() ? ` (paid ${PAYPAL_CURRENCY})` : ''}</p>
+              ${paypalOrderId ? `<p><strong>PayPal order:</strong> ${escapeHtml(paypalOrderId)}</p>` : ''}
+              <p><strong>Customer Email:</strong> ${escapeHtml(customerEmail)}</p>
+              <p><strong>Time:</strong> ${escapeHtml(new Date().toLocaleString())}</p>
               <hr>
-              <p>📎 <strong>Attachments:</strong> ${imageBuffers.length} original image(s) + print-ready PDF (A4, tiled with cut lines)</p>
+              <p>Attachments: ${imageBuffers.length} original image(s) + print-ready PDF (A4, tiled with cut lines)</p>
             `,
-            attachments
-          })
-        });
-        const emailData = await emailRes.json();
-        if (emailRes.ok) {
-          console.log('Order email sent successfully:', emailData.id);
-        } else {
-          console.error('Email send failed:', emailData);
+              attachments
+            });
+            console.log('Shop order email sent');
+          } catch (shopErr) {
+            console.error('Shop email failed:', shopErr.message);
+          }
+        }
+
+        const buyer = normalizeEmail(customerEmail);
+        if (buyer) {
+          try {
+            console.log('Sending customer confirmation');
+            await sendResendEmail({
+              to: buyer,
+              subject: 'We got your Sticker Studio sheet',
+              html: `
+              <p>Paid. We have your A4 sheet.</p>
+              <p><strong>Size:</strong> ${escapeHtml(size)}</p>
+              <p><strong>On the sheet:</strong> ${slots.length}</p>
+              <p><strong>Total:</strong> ₡${escapeHtml(total)}${paypalConfigured() ? ` · $${SHEET_PRICE_USD} USD` : ''}</p>
+              <p>We print it in Costa Rica and will email this same address when it is moving.</p>
+              <p>Sticker Studio</p>
+            `
+            });
+            console.log('Customer confirmation sent');
+          } catch (buyerErr) {
+            console.error('Customer email failed:', buyerErr.message);
+          }
         }
       } catch (emailErr) {
         console.error('Email send failed:', emailErr.message);
