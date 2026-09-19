@@ -968,6 +968,70 @@
       text-wrap: balance;
     }
 
+    .gate-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .gate-head h2 { margin-bottom: 8px; flex: 1; }
+
+    .how-steps {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      background: var(--enamel-2);
+      border-radius: var(--r-2);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .how-steps li {
+      display: grid;
+      grid-template-columns: 1.4rem 1fr;
+      gap: 8px;
+      align-items: baseline;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+
+    .how-steps b {
+      font-family: var(--display);
+      font-weight: 400;
+      color: var(--ketchup);
+    }
+
+    .how-strip {
+      margin: 10px 12px 0;
+      padding: 12px 16px 14px;
+      background: var(--enamel);
+      border-radius: var(--r-3);
+      box-shadow: inset 0 0 0 2px var(--chrome-2), 0 2px 0 var(--chrome-3);
+    }
+
+    .how-strip h2 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 1.125rem;
+      color: var(--ketchup);
+      margin-bottom: 8px;
+    }
+
+    .how-strip .how-steps {
+      margin: 0;
+      padding: 0;
+      background: none;
+      box-shadow: none;
+    }
+
+    @media (min-width: 901px) {
+      .how-strip .how-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; }
+    }
+
     .gate-copy, .edit-hint {
       color: var(--ink-2);
       font-size: 1rem;
@@ -1242,10 +1306,15 @@
       <div class="top-right">
         <p class="tag">One A4 sheet · ₡2,000 · $4 USD</p>
         <div class="trial-badge" id="trialBadge" style="display: none;">
-          <span id="trialCount"></span> <span id="trialNoun">stickers</span> left today
+          <span id="trialCount"></span> <span id="trialNoun">pictures</span> <span id="trialLeft">left today</span>
         </div>
       </div>
     </header>
+
+    <section class="how-strip" id="howStrip" hidden>
+      <h2 id="howTitle">How it works</h2>
+      <ol class="how-steps" id="howStepsMain"></ol>
+    </section>
 
     <main class="box">
       <div class="box-inner">
@@ -1262,7 +1331,7 @@
             <div class="prompt-head">
               <h2 id="designTitle"><label for="prompt">What's your sticker?</label></h2>
               <div class="prompt-tools">
-                <div class="lang-toggle" role="group" aria-label="Speech language">
+                <div class="lang-toggle" role="group" aria-label="Language">
                   <button type="button" class="lang-btn active" data-lang="en" id="langEn">EN</button>
                   <button type="button" class="lang-btn" data-lang="es" id="langEs">ES</button>
                 </div>
@@ -1356,10 +1425,17 @@
 
   <div class="modal-overlay visible" id="emailGate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
     <div class="modal">
-      <h2 id="gateTitle">A grown-up's email first</h2>
-      <p class="gate-copy">Kids make stickers or color-in pages, a grown-up types the email. 20 AI pictures a day. We only use it to stop spam, no account.</p>
+      <div class="gate-head">
+        <h2 id="gateTitle">A grown-up's email first</h2>
+        <div class="lang-toggle" role="group" aria-label="Language">
+          <button type="button" class="lang-btn active" data-lang="en" id="gateLangEn">EN</button>
+          <button type="button" class="lang-btn" data-lang="es" id="gateLangEs">ES</button>
+        </div>
+      </div>
+      <p class="gate-copy" id="gateCopy">Kids make stickers or color-in pages, a grown-up types the email. 20 AI pictures a day. We only use it to stop spam, no account.</p>
+      <ol class="how-steps" id="howStepsGate"></ol>
       <div class="form-group">
-        <label for="gateEmail">Email</label>
+        <label for="gateEmail" id="gateEmailLabel">Email</label>
         <input type="email" id="gateEmail" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="modal-actions">
@@ -1457,6 +1533,7 @@
       email: localStorage.getItem('customerEmail') || '',
       trialsRemaining: null,
       unlimited: false,
+      uiLang: localStorage.getItem('uiLang') || localStorage.getItem('voiceLang') || (navigator.language && navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en'),
       voiceLang: localStorage.getItem('voiceLang') || (navigator.language && navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en'),
       grokStt: false,
       listening: false,
@@ -1495,6 +1572,324 @@
       vintage: 'Vintage',
       neon: 'Neon'
     };
+
+    const I18N = {
+      en: {
+        title: 'Sticker Studio · Make your own stickers',
+        skip: 'Skip to the sticker form',
+        promiseSticker: 'Say it, see it as a sticker, fill a sheet.',
+        promiseColoring: 'Say it, order a sheet, color it by hand.',
+        tag: 'One A4 sheet · ₡2,000 · $4 USD',
+        trialLeft: 'left today',
+        trialNoun: 'pictures',
+        trialLimit: 'Daily limit reached. Come back tomorrow.',
+        howTitle: 'How it works',
+        how1: 'Say it or upload a picture',
+        how2: 'Mix them on one A4 sheet',
+        how3: 'A grown-up pays ₡2,000',
+        how4: 'We print it in Costa Rica',
+        modeLabel: 'What are we making?',
+        modeSticker: 'Stickers',
+        modeColoring: 'Color-in',
+        designSticker: "What's your sticker?",
+        designColoring: 'What should we draw to color?',
+        phSticker: 'A puppy in sunglasses at the beach',
+        phColoring: 'A dinosaur riding a scooter',
+        micHintSticker: 'Tap the mic and say it. English or Spanish.',
+        micHintColoring: 'Tap the mic and say what to color. English or Spanish.',
+        micLabelSticker: 'Speak your sticker',
+        micLabelColoring: 'Speak your coloring page',
+        styleLabel: 'Style',
+        styleRealistic: 'Realistic',
+        styleCartoon: 'Cartoon',
+        styleKawaii: 'Kawaii',
+        styleWatercolor: 'Watercolor',
+        style3d: '3D',
+        styleMinimal: 'Minimal',
+        styleVintage: 'Vintage',
+        styleNeon: 'Neon',
+        makeSticker: 'Make my sticker',
+        makeColoring: 'Make my color-in',
+        drawing: 'Drawing…',
+        uploadSticker: 'Or use your own picture',
+        uploadColoring: 'Or turn a photo into a coloring page',
+        previewSticker: 'Your sticker',
+        previewColoring: 'Your color-in',
+        previewEmptySticker1: 'Your sticker sticks here.',
+        previewEmptySticker2: 'Say what you want, pick a style, press the latch.',
+        previewEmptyColoring1: 'Your color-in lands here.',
+        previewEmptyColoring2: 'Say what to draw, then order a sheet.',
+        newBtn: 'New',
+        editBtn: 'Edit',
+        orderBtn: 'Order a sheet',
+        downloadPng: 'Download PNG',
+        downloadPage: 'Download page',
+        orderHintSticker: 'A sheet can mix your stickers. Pick size when you buy. ₡2,000 · $4 USD.',
+        orderHintColoring: 'Order a sheet of color-in pages. Pick size when you buy. ₡2,000 · $4 USD.',
+        historyTitle: 'Your sticker stash',
+        clearAll: 'Clear all',
+        gateTitle: "A grown-up's email first",
+        gateCopy: 'Kids make stickers or color-in pages, a grown-up types the email. 20 AI pictures a day. We only use it to stop spam, no account.',
+        gateEmail: 'Email',
+        gateContinue: 'Open the lunchbox',
+        editTitleSticker: 'Change your sticker',
+        editTitleColoring: 'Change your color-in',
+        editHint: 'Say what should change: "make the background blue", "add sparkles", "take off the hat".',
+        editLabel: 'What changes?',
+        editPh: 'Add a rainbow behind it',
+        cancel: 'Cancel',
+        changeIt: 'Change it',
+        sheetTitleSticker: 'Fill your sheet',
+        sheetTitleColoring: 'Fill your color-in sheet',
+        sheetCopySticker: 'One A4 sheet, ₡2,000 · $4 USD. Mix any of your stickers. Pick size here.',
+        sheetCopyColoring: 'One A4 sheet of color-in pages, ₡2,000 · $4 USD. Pick size here.',
+        sizeMedium: 'Medium',
+        sizeMediumInfo: '7×7 cm · 8 per sheet',
+        sizeLarge: 'Large',
+        sizeLargeInfo: '10×10 cm · 4 per sheet',
+        designsSticker: 'Your stickers',
+        designsColoring: 'Your color-in pages',
+        sheetEmail: "Grown-up's email for the order",
+        payHint: 'Pay {usd} USD. PayPal converts from your card if needed.',
+        submitOrder: 'Submit order',
+        submitting: 'Submitting…',
+        filled: '{n} / {max} filled',
+        emptySticker: 'No designs yet. Generate or upload a sticker first.',
+        emptyColoring: 'No color-in pages yet. Make one first.',
+        thanksTitleSticker: 'Paid. We got your sheet.',
+        thanksTitleColoring: 'Paid. We got your color-in sheet.',
+        thanksCopy: 'We emailed the grown-up address you used. We print the sheet in Costa Rica.',
+        thanksBack: 'Back to the lunchbox',
+        unitSticker1: 'sticker',
+        unitStickerN: 'stickers',
+        unitColoring1: 'color-in page',
+        unitColoringN: 'color-in pages',
+        needPromptSticker: 'Tell us what your sticker is first.',
+        needPromptColoring: 'Tell us what to draw first.',
+        readySticker: 'Sticker ready.',
+        readyColoring: 'Color-in ready. Order a sheet.',
+        genFail: 'Generation failed. Please try again.',
+        editOk: 'Edit applied.',
+        editFail: 'Edit failed. Please try again.',
+        uploaded: 'Image uploaded.',
+        badPhoto: 'That photo will not display. Use a JPG or PNG.',
+        fromHistory: 'Loaded from history',
+        speechNeed: 'Speech needs Chrome or Safari on this device.',
+        micDenied: 'Microphone permission denied.',
+        speechFail: 'Speech failed. Try again.',
+        transcribing: 'Transcribing...',
+        transcribeFail: 'Transcription failed. Try again.',
+        listening: 'Listening…',
+        listeningHint: 'Listening. Tap the mic to finish.',
+        loadingSticker: 'Drawing your sticker',
+        loadingColoring: 'Drawing your color-in',
+        loadingSub: 'Usually 15 to 30 seconds',
+        orderFail: 'Order failed. Please try again.',
+        langGroup: 'Language'
+      },
+      es: {
+        title: 'Sticker Studio · Hacé tus propios stickers',
+        skip: 'Saltar al formulario',
+        promiseSticker: 'Decílo, velo como sticker, llená la hoja.',
+        promiseColoring: 'Decílo, pedí la hoja, coloreala a mano.',
+        tag: 'Una hoja A4 · ₡2,000 · $4 USD',
+        trialLeft: 'hoy',
+        trialNoun: 'dibujos',
+        trialLimit: 'Llegaste al límite del día. Volvé mañana.',
+        howTitle: 'Cómo funciona',
+        how1: 'Decílo o subí una foto',
+        how2: 'Armá una hoja A4',
+        how3: 'Un adulto paga ₡2,000',
+        how4: 'Lo imprimimos en Costa Rica',
+        modeLabel: '¿Qué vamos a hacer?',
+        modeSticker: 'Stickers',
+        modeColoring: 'Para colorear',
+        designSticker: '¿Cuál es tu sticker?',
+        designColoring: '¿Qué dibujamos para colorear?',
+        phSticker: 'Un perrito con lentes en la playa',
+        phColoring: 'Un dinosaurio en scooter',
+        micHintSticker: 'Tocá el micrófono y decilo. Español o inglés.',
+        micHintColoring: 'Tocá el micrófono y decí qué colorear. Español o inglés.',
+        micLabelSticker: 'Decí tu sticker',
+        micLabelColoring: 'Decí tu página para colorear',
+        styleLabel: 'Estilo',
+        styleRealistic: 'Realista',
+        styleCartoon: 'Caricatura',
+        styleKawaii: 'Kawaii',
+        styleWatercolor: 'Acuarela',
+        style3d: '3D',
+        styleMinimal: 'Mínimo',
+        styleVintage: 'Vintage',
+        styleNeon: 'Neón',
+        makeSticker: 'Hacé mi sticker',
+        makeColoring: 'Hacé mi página',
+        drawing: 'Dibujando…',
+        uploadSticker: 'O usá tu propia foto',
+        uploadColoring: 'O convertí una foto en página para colorear',
+        previewSticker: 'Tu sticker',
+        previewColoring: 'Tu página para colorear',
+        previewEmptySticker1: 'Tu sticker se pega aquí.',
+        previewEmptySticker2: 'Decí qué querés, elegí un estilo, apretá el broche.',
+        previewEmptyColoring1: 'Tu página cae aquí.',
+        previewEmptyColoring2: 'Decí qué dibujar y pedí una hoja.',
+        newBtn: 'Nuevo',
+        editBtn: 'Editar',
+        orderBtn: 'Pedí una hoja',
+        downloadPng: 'Bajar PNG',
+        downloadPage: 'Bajar página',
+        orderHintSticker: 'Una hoja puede mezclar tus stickers. El tamaño se elige al pagar. ₡2,000 · $4 USD.',
+        orderHintColoring: 'Pedí una hoja de páginas para colorear. El tamaño se elige al pagar. ₡2,000 · $4 USD.',
+        historyTitle: 'Tu caja de stickers',
+        clearAll: 'Borrar todo',
+        gateTitle: 'Primero el correo de un adulto',
+        gateCopy: 'Los chicos hacen stickers o páginas para colorear. Un adulto pone el correo. 20 dibujos de IA al día. Solo para frenar spam, no hay cuenta.',
+        gateEmail: 'Correo',
+        gateContinue: 'Abrí la lonchera',
+        editTitleSticker: 'Cambiá tu sticker',
+        editTitleColoring: 'Cambiá tu página',
+        editHint: 'Decí qué cambia: "fondo azul", "agregá estrellas", "sacá el sombrero".',
+        editLabel: '¿Qué cambia?',
+        editPh: 'Agregá un arcoíris atrás',
+        cancel: 'Cancelar',
+        changeIt: 'Cambialo',
+        sheetTitleSticker: 'Llená tu hoja',
+        sheetTitleColoring: 'Llená tu hoja para colorear',
+        sheetCopySticker: 'Una hoja A4, ₡2,000 · $4 USD. Mezclá tus stickers. Acá elegís el tamaño.',
+        sheetCopyColoring: 'Una hoja A4 de páginas para colorear, ₡2,000 · $4 USD. Acá elegís el tamaño.',
+        sizeMedium: 'Mediano',
+        sizeMediumInfo: '7×7 cm · 8 por hoja',
+        sizeLarge: 'Grande',
+        sizeLargeInfo: '10×10 cm · 4 por hoja',
+        designsSticker: 'Tus stickers',
+        designsColoring: 'Tus páginas para colorear',
+        sheetEmail: 'Correo del adulto para el pedido',
+        payHint: 'Pagás {usd} USD. PayPal convierte de tu tarjeta si hace falta.',
+        submitOrder: 'Enviar pedido',
+        submitting: 'Enviando…',
+        filled: '{n} / {max} llenos',
+        emptySticker: 'Todavía no hay diseños. Hacé o subí un sticker primero.',
+        emptyColoring: 'Todavía no hay páginas. Hacé una primero.',
+        thanksTitleSticker: 'Pagado. Ya tenemos tu hoja.',
+        thanksTitleColoring: 'Pagado. Ya tenemos tu hoja para colorear.',
+        thanksCopy: 'Le escribimos al correo del adulto que usaste. Imprimimos la hoja en Costa Rica.',
+        thanksBack: 'Volvé a la lonchera',
+        unitSticker1: 'sticker',
+        unitStickerN: 'stickers',
+        unitColoring1: 'página para colorear',
+        unitColoringN: 'páginas para colorear',
+        needPromptSticker: 'Primero decinos cuál es el sticker.',
+        needPromptColoring: 'Primero decinos qué dibujar.',
+        readySticker: 'Sticker listo.',
+        readyColoring: 'Página lista. Pedí una hoja.',
+        genFail: 'No se pudo dibujar. Probá de nuevo.',
+        editOk: 'Cambio hecho.',
+        editFail: 'No se pudo editar. Probá de nuevo.',
+        uploaded: 'Foto lista.',
+        badPhoto: 'Esa foto no se ve. Usá JPG o PNG.',
+        fromHistory: 'Sacado de tu caja',
+        speechNeed: 'El micrófono pide Chrome o Safari en este aparato.',
+        micDenied: 'No hay permiso para el micrófono.',
+        speechFail: 'No se escuchó. Probá de nuevo.',
+        transcribing: 'Transcribiendo...',
+        transcribeFail: 'No se pudo transcribir. Probá de nuevo.',
+        listening: 'Escuchando…',
+        listeningHint: 'Escuchando. Tocá el micrófono para terminar.',
+        loadingSticker: 'Dibujando tu sticker',
+        loadingColoring: 'Dibujando tu página',
+        loadingSub: 'Suele tardar 15 a 30 segundos',
+        orderFail: 'No se pudo pedir. Probá de nuevo.',
+        langGroup: 'Idioma'
+      }
+    };
+
+    function t(key, vars) {
+      const table = I18N[state.uiLang] || I18N.en;
+      let s = table[key] || I18N.en[key] || key;
+      if (vars) {
+        Object.keys(vars).forEach((k) => {
+          s = s.split('{' + k + '}').join(vars[k]);
+        });
+      }
+      return s;
+    }
+
+    function howStepsHtml() {
+      return [1, 2, 3, 4].map((n) => `<li><b>${n}</b><span>${t('how' + n)}</span></li>`).join('');
+    }
+
+    function applyI18n() {
+      const coloring = state.mode === 'coloring';
+      document.documentElement.lang = state.uiLang === 'es' ? 'es-CR' : 'en';
+      document.title = t('title');
+      const skip = document.querySelector('.skip');
+      if (skip) skip.textContent = t('skip');
+      document.getElementById('howTitle').textContent = t('howTitle');
+      document.getElementById('howStepsGate').innerHTML = howStepsHtml();
+      document.getElementById('howStepsMain').innerHTML = howStepsHtml();
+      document.getElementById('promiseLine').textContent = coloring ? t('promiseColoring') : t('promiseSticker');
+      document.querySelector('.tag').textContent = t('tag');
+      document.getElementById('trialNoun').textContent = t('trialNoun');
+      const trialLeft = document.getElementById('trialLeft');
+      if (trialLeft) trialLeft.textContent = t('trialLeft');
+      document.getElementById('modeLabel').textContent = t('modeLabel');
+      document.getElementById('modeSticker').textContent = t('modeSticker');
+      document.getElementById('modeColoring').textContent = t('modeColoring');
+      document.getElementById('designTitle').innerHTML = coloring
+        ? `<label for="prompt">${t('designColoring')}</label>`
+        : `<label for="prompt">${t('designSticker')}</label>`;
+      promptInput.placeholder = coloring ? t('phColoring') : t('phSticker');
+      document.getElementById('micHint').textContent = coloring ? t('micHintColoring') : t('micHintSticker');
+      document.getElementById('micBtn').setAttribute('aria-label', coloring ? t('micLabelColoring') : t('micLabelSticker'));
+      document.getElementById('styleLabel').textContent = t('styleLabel');
+      const styleMap = {
+        realistic: 'styleRealistic', cartoon: 'styleCartoon', kawaii: 'styleKawaii',
+        watercolor: 'styleWatercolor', '3d': 'style3d', minimalist: 'styleMinimal',
+        vintage: 'styleVintage', neon: 'styleNeon'
+      };
+      document.querySelectorAll('.style-btn').forEach((btn) => {
+        const key = styleMap[btn.dataset.style];
+        if (key) btn.textContent = t(key);
+      });
+      generateBtn.textContent = coloring ? t('makeColoring') : t('makeSticker');
+      document.getElementById('uploadLabel').textContent = coloring ? t('uploadColoring') : t('uploadSticker');
+      document.getElementById('previewTitle').textContent = coloring ? t('previewColoring') : t('previewSticker');
+      const placeholder = previewArea.querySelector('.preview-placeholder');
+      if (placeholder && !state.image) {
+        placeholder.innerHTML = coloring
+          ? `<p>${t('previewEmptyColoring1')}</p><p>${t('previewEmptyColoring2')}</p>`
+          : `<p>${t('previewEmptySticker1')}</p><p>${t('previewEmptySticker2')}</p>`;
+      }
+      document.getElementById('regenerateBtn').textContent = t('newBtn');
+      document.getElementById('editBtn').textContent = t('editBtn');
+      document.getElementById('orderBtn').textContent = t('orderBtn');
+      document.getElementById('downloadBtn').textContent = coloring ? t('downloadPage') : t('downloadPng');
+      document.getElementById('orderHint').textContent = coloring ? t('orderHintColoring') : t('orderHintSticker');
+      const hist = document.getElementById('historyTitle');
+      hist.childNodes[0].textContent = t('historyTitle') + ' ';
+      document.getElementById('clearHistory').textContent = t('clearAll');
+      document.getElementById('gateTitle').textContent = t('gateTitle');
+      document.getElementById('gateCopy').textContent = t('gateCopy');
+      document.getElementById('gateEmailLabel').textContent = t('gateEmail');
+      document.getElementById('gateContinue').textContent = t('gateContinue');
+      document.getElementById('editTitle').textContent = coloring ? t('editTitleColoring') : t('editTitleSticker');
+      document.querySelector('.edit-hint').textContent = t('editHint');
+      document.querySelector('label[for="editPrompt"]').textContent = t('editLabel');
+      document.getElementById('editPrompt').placeholder = t('editPh');
+      document.getElementById('cancelEdit').textContent = t('cancel');
+      document.getElementById('applyEdit').textContent = t('changeIt');
+      document.getElementById('cancelSheet').textContent = t('cancel');
+      document.getElementById('submitSheet').textContent = t('submitOrder');
+      document.querySelector('label[for="sheetEmail"]').textContent = t('sheetEmail');
+      document.getElementById('thanksDone').textContent = t('thanksBack');
+      const med = document.querySelector('.sheet-size-btn[data-size="medium"]');
+      const lrg = document.querySelector('.sheet-size-btn[data-size="large"]');
+      med.querySelector('.s-name').textContent = t('sizeMedium');
+      med.querySelector('.s-info').textContent = t('sizeMediumInfo');
+      lrg.querySelector('.s-name').textContent = t('sizeLarge');
+      lrg.querySelector('.s-info').textContent = t('sizeLargeInfo');
+      document.querySelectorAll('.lang-toggle').forEach((el) => el.setAttribute('aria-label', t('langGroup')));
+      updateTrialBadge();
+    }
 
     const promptInput = document.getElementById('prompt');
     const generateBtn = document.getElementById('generateBtn');
@@ -1549,45 +1944,16 @@
         btn.classList.toggle('active', btn.dataset.mode === state.mode);
       });
       const coloring = state.mode === 'coloring';
-      document.getElementById('promiseLine').textContent = coloring
-        ? 'Say it, order a sheet, color it by hand.'
-        : 'Say it, see it as a sticker, fill a sheet.';
-      document.getElementById('designTitle').innerHTML = coloring
-        ? '<label for="prompt">What should we draw to color?</label>'
-        : '<label for="prompt">What\'s your sticker?</label>';
-      promptInput.placeholder = coloring
-        ? 'A dinosaur riding a scooter'
-        : 'A puppy in sunglasses at the beach';
-      document.getElementById('micHint').textContent = coloring
-        ? 'Tap the mic and say what to color. English or Spanish.'
-        : 'Tap the mic and say it. English or Spanish.';
-      document.getElementById('micBtn').setAttribute('aria-label', coloring ? 'Speak your coloring page' : 'Speak your sticker');
-      generateBtn.textContent = coloring ? 'Make my color-in' : 'Make my sticker';
-      document.getElementById('previewTitle').textContent = coloring ? 'Your color-in' : 'Your sticker';
-      document.getElementById('uploadLabel').textContent = coloring
-        ? 'Or turn a photo into a coloring page'
-        : 'Or use your own picture';
-      document.getElementById('downloadBtn').textContent = coloring ? 'Download page' : 'Download PNG';
-      document.getElementById('editTitle').textContent = coloring ? 'Change your color-in' : 'Change your sticker';
-      document.getElementById('orderHint').textContent = coloring
-        ? 'Order a sheet of color-in pages. Pick size when you buy. ₡2,000 · $4 USD.'
-        : 'A sheet can mix your stickers. Pick size when you buy. ₡2,000 · $4 USD.';
-      document.getElementById('trialNoun').textContent = 'pictures';
-      const placeholder = previewArea.querySelector('.preview-placeholder');
-      if (placeholder && !state.image) {
-        placeholder.innerHTML = coloring
-          ? '<p>Your color-in lands here.</p><p>Say what to draw, then order a sheet.</p>'
-          : '<p>Your sticker sticks here.</p><p>Say what you want, pick a style, press the latch.</p>';
-      }
       if (!skipClear && state.image) {
         const current = state.history.find((h) => h.image === state.image);
         if (current && itemKind(current) !== state.mode) {
           state.image = null;
           previewArea.innerHTML = coloring
-            ? '<div class="preview-placeholder"><p>Your color-in lands here.</p><p>Say what to draw, then order a sheet.</p></div>'
-            : '<div class="preview-placeholder"><p>Your sticker sticks here.</p><p>Say what you want, pick a style, press the latch.</p></div>';
+            ? `<div class="preview-placeholder"><p>${t('previewEmptyColoring1')}</p><p>${t('previewEmptyColoring2')}</p></div>`
+            : `<div class="preview-placeholder"><p>${t('previewEmptySticker1')}</p><p>${t('previewEmptySticker2')}</p></div>`;
         }
       }
+      applyI18n();
       syncImageActions();
     }
 
@@ -1647,6 +2013,8 @@
 
     function hideEmailGate() {
       document.getElementById('emailGate').classList.remove('visible');
+      const strip = document.getElementById('howStrip');
+      if (strip) strip.hidden = false;
     }
 
     async function submitEmailGate() {
@@ -1690,7 +2058,7 @@
       });
 
       document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', () => setVoiceLang(btn.dataset.lang));
+        btn.addEventListener('click', () => setUiLang(btn.dataset.lang));
       });
       document.getElementById('micBtn').addEventListener('click', toggleDictation);
 
@@ -1754,7 +2122,7 @@
         trialBadge.classList.add('warning');
       } else if (state.trialsRemaining <= 0) {
         trialBadge.classList.add('expired');
-        trialBadge.innerHTML = 'Daily limit reached. Come back tomorrow.';
+        trialBadge.innerHTML = t('trialLimit');
       }
     }
 
@@ -1781,19 +2149,29 @@
 
     function syncLangButtons() {
       document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === state.voiceLang);
+        btn.classList.toggle('active', btn.dataset.lang === state.uiLang);
       });
     }
 
-    function setVoiceLang(lang) {
-      state.voiceLang = lang === 'es' ? 'es' : 'en';
+    function setUiLang(lang) {
+      state.uiLang = lang === 'es' ? 'es' : 'en';
+      state.voiceLang = state.uiLang;
+      localStorage.setItem('uiLang', state.uiLang);
       localStorage.setItem('voiceLang', state.voiceLang);
       syncLangButtons();
+      applyI18n();
       if (recognition) recognition.lang = speechLang();
+      const sheetOpen = document.getElementById('sheetModal').classList.contains('visible');
+      if (sheetOpen) {
+        document.getElementById('sheetTitle').textContent = state.mode === 'coloring' ? t('sheetTitleColoring') : t('sheetTitleSticker');
+        document.getElementById('sheetCopy').textContent = state.mode === 'coloring' ? t('sheetCopyColoring') : t('sheetCopySticker');
+        document.getElementById('sheetDesignsLabel').textContent = state.mode === 'coloring' ? t('designsColoring') : t('designsSticker');
+        renderSheetModal();
+      }
     }
 
     function speechLang() {
-      return state.voiceLang === 'es' ? 'es-MX' : 'en-US';
+      return state.voiceLang === 'es' ? 'es-CR' : 'en-US';
     }
 
     function appendPrompt(text) {
@@ -1811,8 +2189,8 @@
       micBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
       const hint = document.getElementById('micHint');
       hint.textContent = on
-        ? (state.voiceLang === 'es' ? 'Escuchando. Toca el micro para terminar.' : 'Listening. Tap the mic to finish.')
-        : 'Tap the mic and say it. English or Spanish.';
+        ? t('listeningHint')
+        : (state.mode === 'coloring' ? t('micHintColoring') : t('micHintSticker'));
     }
 
     function stopBrowserSpeech() {
@@ -1848,14 +2226,14 @@
     async function startBrowserSpeech() {
       const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!Rec) {
-        showStatus('Speech needs Chrome or Safari on this device.', 'error');
+        showStatus(t('speechNeed'), 'error');
         return;
       }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop());
       } catch (e) {
-        showStatus('Microphone permission denied.', 'error');
+        showStatus(t('micDenied'), 'error');
         return;
       }
       recognition = new Rec();
@@ -1877,7 +2255,7 @@
         if (event.error === 'no-speech' || event.error === 'aborted') return;
         state.listening = false;
         setMicListening(false);
-        showStatus(event.error === 'not-allowed' ? 'Microphone permission denied.' : 'Speech failed. Try again.', 'error');
+        showStatus(event.error === 'not-allowed' ? t('micDenied') : t('speechFail'), 'error');
       };
       recognition.onend = () => {
         if (state.listening) {
@@ -1895,7 +2273,7 @@
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (e) {
-        showStatus('Microphone permission denied.', 'error');
+        showStatus(t('micDenied'), 'error');
         return;
       }
       const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -1914,7 +2292,7 @@
         }
         setMicListening(false);
         if (!blob.size) return;
-        showStatus(state.voiceLang === 'es' ? 'Transcribiendo...' : 'Transcribing...', 'info');
+        showStatus(t('transcribing'), 'info');
         try {
           const audio = await blobToBase64(blob);
           const res = await fetch('/api/dictation', {
@@ -1927,7 +2305,7 @@
           appendPrompt(data.text);
           hideStatus();
         } catch (err) {
-          showStatus(err.message || 'Transcription failed. Try again.', 'error');
+          showStatus(err.message || t('transcribeFail'), 'error');
         }
       };
       mediaRecorder.start();
@@ -1951,12 +2329,12 @@
 
     function hideStatus() { statusEl.style.display = 'none'; }
 
-    function showLoading(message = 'Drawing your sticker') {
+    function showLoading(message) {
       previewArea.innerHTML = `
         <div class="loading" role="status">
           <div class="spinner" aria-hidden="true"></div>
-          <p>${message}</p>
-          <p class="loading-sub">Usually 15 to 30 seconds</p>
+          <p>${message || t('loadingSticker')}</p>
+          <p class="loading-sub">${t('loadingSub')}</p>
         </div>
       `;
     }
@@ -1967,7 +2345,7 @@
       img.className = 'preview-image';
       img.alt = state.mode === 'coloring' ? 'Your color-in' : 'Your sticker';
       img.onerror = () => {
-        showStatus('That photo will not display. Use a JPG or PNG.', 'error');
+        showStatus(t('badPhoto'), 'error');
       };
       img.src = src;
       previewArea.replaceChildren(img);
@@ -2017,7 +2395,7 @@
           state.prompt = item.prompt;
           promptInput.value = item.prompt;
           showImage(item.image, true);
-          showStatus('Loaded from history', 'info');
+          showStatus(t('fromHistory'), 'info');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
@@ -2036,13 +2414,13 @@
         return;
       }
       if (!state.prompt.trim()) {
-        showStatus(state.mode === 'coloring' ? 'Tell us what to draw first.' : 'Tell us what your sticker is first.', 'error');
+        showStatus(state.mode === 'coloring' ? t('needPromptColoring') : t('needPromptSticker'), 'error');
         return;
       }
 
       generateBtn.disabled = true;
-      generateBtn.textContent = 'Drawing…';
-      showLoading(state.mode === 'coloring' ? 'Drawing your color-in' : 'Drawing your sticker');
+      generateBtn.textContent = t('drawing');
+      showLoading(state.mode === 'coloring' ? t('loadingColoring') : t('loadingSticker'));
       hideStatus();
 
       try {
@@ -2059,24 +2437,24 @@
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Generation failed');
+        if (!res.ok) throw new Error(data.error || t('genFail'));
 
         applyTrials(data);
         showImage(data.image);
-        showStatus(state.mode === 'coloring' ? 'Color-in ready. Order a sheet.' : 'Sticker ready.', 'success');
+        showStatus(state.mode === 'coloring' ? t('readyColoring') : t('readySticker'), 'success');
       } catch (err) {
         console.error(err);
-        showStatus(err.message || 'Generation failed. Please try again.', 'error');
+        showStatus(err.message || t('genFail'), 'error');
         previewArea.innerHTML = `
           <div class="preview-placeholder">
-            <p>Generation failed</p>
+            <p>${t('genFail')}</p>
             <p>${err.message}</p>
           </div>
         `;
       }
 
       generateBtn.disabled = false;
-      generateBtn.textContent = state.mode === 'coloring' ? 'Make my color-in' : 'Make my sticker';
+      generateBtn.textContent = state.mode === 'coloring' ? t('makeColoring') : t('makeSticker');
     }
 
     // Edit functionality
@@ -2132,10 +2510,10 @@
 
         applyTrials(data);
         showImage(data.image);
-        showStatus('Edit applied.', 'success');
+        showStatus(t('editOk'), 'success');
       } catch (err) {
         console.error(err);
-        showStatus(err.message || 'Edit failed. Please try again.', 'error');
+        showStatus(err.message || t('editFail'), 'error');
         showImage(state.image); // Restore previous image
       }
     }
@@ -2195,17 +2573,17 @@
           if (!res.ok) throw new Error(data.error || 'Could not make a coloring page');
           applyTrials(data);
           showImage(data.image);
-          showStatus('Color-in ready. Order a sheet.', 'success');
+          showStatus(t('readyColoring'), 'success');
           generateBtn.disabled = false;
-          generateBtn.textContent = 'Make my color-in';
+          generateBtn.textContent = t('makeColoring');
           return;
         }
         showImage(src);
-        showStatus('Image uploaded.', 'success');
+        showStatus(t('uploaded'), 'success');
       } catch (err) {
         generateBtn.disabled = false;
-        generateBtn.textContent = state.mode === 'coloring' ? 'Make my color-in' : 'Make my sticker';
-        showStatus(err.message || 'That photo will not display. Use a JPG or PNG.', 'error');
+        generateBtn.textContent = state.mode === 'coloring' ? t('makeColoring') : t('makeSticker');
+        showStatus(err.message || t('badPhoto'), 'error');
       }
     }
 
@@ -2222,11 +2600,9 @@
     function showSheetModal() {
       if (state.email) document.getElementById('sheetEmail').value = state.email;
       const coloring = state.mode === 'coloring';
-      document.getElementById('sheetTitle').textContent = coloring ? 'Fill your color-in sheet' : 'Fill your sheet';
-      document.getElementById('sheetCopy').textContent = coloring
-        ? 'One A4 sheet of color-in pages, ₡2,000 · $4 USD. Pick size here.'
-        : 'One A4 sheet, ₡2,000 · $4 USD. Mix any of your stickers. Pick size here.';
-      document.getElementById('sheetDesignsLabel').textContent = coloring ? 'Your color-in pages' : 'Your stickers';
+      document.getElementById('sheetTitle').textContent = coloring ? t('sheetTitleColoring') : t('sheetTitleSticker');
+      document.getElementById('sheetCopy').textContent = coloring ? t('sheetCopyColoring') : t('sheetCopySticker');
+      document.getElementById('sheetDesignsLabel').textContent = coloring ? t('designsColoring') : t('designsSticker');
       state.sheet.counts = {};
       lastSheetFilled = 0;
 
@@ -2256,13 +2632,10 @@
     function showThanksModal(sizeLabel, totalSlots) {
       const coloring = state.mode === 'coloring';
       const unit = coloring
-        ? (totalSlots === 1 ? 'color-in page' : 'color-in pages')
-        : (totalSlots === 1 ? 'sticker' : 'stickers');
-      document.getElementById('thanksTitle').textContent = coloring
-        ? 'Paid. We got your color-in sheet.'
-        : 'Paid. We got your sheet.';
-      document.getElementById('thanksCopy').textContent =
-        'We emailed the grown-up address you used. We print the sheet in Costa Rica.';
+        ? (totalSlots === 1 ? t('unitColoring1') : t('unitColoringN'))
+        : (totalSlots === 1 ? t('unitSticker1') : t('unitStickerN'));
+      document.getElementById('thanksTitle').textContent = coloring ? t('thanksTitleColoring') : t('thanksTitleSticker');
+      document.getElementById('thanksCopy').textContent = t('thanksCopy');
       document.getElementById('thanksFacts').textContent =
         `${sizeLabel} · ${totalSlots} ${unit} · ${formatPrice(getSheetPrice())} · $${Number(getUsdPrice())} USD`;
       document.getElementById('thanksModal').classList.add('visible');
@@ -2295,7 +2668,7 @@
       const filled = getTotalSlots();
 
       // Slots indicator
-      document.getElementById('slotsIndicator').textContent = `${filled} / ${max} filled`;
+      document.getElementById('slotsIndicator').textContent = t('filled', { n: filled, max });
 
       // Preview row — proportional A4 sheet
       const previewRow = document.getElementById('sheetPreviewRow');
@@ -2325,9 +2698,7 @@
       const grid = document.getElementById('sheetThumbGrid');
       const modeItems = state.history.filter((item) => itemKind(item) === state.mode);
       if (modeItems.length === 0) {
-        grid.innerHTML = state.mode === 'coloring'
-          ? '<div class="sheet-empty-hint">No color-in pages yet. Make one first.</div>'
-          : '<div class="sheet-empty-hint">No designs yet. Generate or upload a sticker first.</div>';
+        grid.innerHTML = `<div class="sheet-empty-hint">${state.mode === 'coloring' ? t('emptyColoring') : t('emptySticker')}</div>`;
       } else {
         grid.innerHTML = state.history.map((item, i) => {
           if (itemKind(item) !== state.mode) return '';
@@ -2374,7 +2745,7 @@
         ? `${formatPrice(getSheetPrice())} · $${Number(getUsdPrice())} USD`
         : '₡0';
       const hint = document.getElementById('sheetPayHint');
-      if (hint) hint.textContent = `Pay $${Number(getUsdPrice())} USD. PayPal converts from your card if needed.`;
+      if (hint) hint.textContent = t('payHint', { usd: Number(getUsdPrice()) });
 
       document.getElementById('submitSheet').disabled = filled === 0;
       syncPaypalButtons();
@@ -2480,7 +2851,7 @@
 
       const submitBtn = document.getElementById('submitSheet');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Submitting…';
+      submitBtn.textContent = t('submitting');
 
       try {
         const orderRes = await fetch('/api/order', {
@@ -2506,11 +2877,11 @@
         hideSheetModal();
         showThanksModal(sizeLabel, totalSlots);
       } catch (err) {
-        alert(err.message || 'Order failed. Please try again.');
+        alert(err.message || t('orderFail'));
       }
 
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit order';
+      submitBtn.textContent = t('submitOrder');
     }
 
     init();
